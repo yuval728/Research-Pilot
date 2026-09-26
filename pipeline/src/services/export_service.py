@@ -7,12 +7,12 @@ Retrieves generated assets from Supabase Storage and DB.
 import uuid
 
 import anyio
-from sqlalchemy import desc, select, or_
+from sqlalchemy import desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from supabase import Client  # type: ignore[import-untyped]
 
 from src.core.config import get_settings
-from src.core.exceptions import StorageFileNotFoundError, StorageError
+from src.core.exceptions import StorageError, StorageFileNotFoundError
 from src.db.engine import get_supabase_client
 from src.db.models import ExtractionORM, OutputORM, PaperORM
 from src.domains.ai_ml.schema import AiMlExtraction

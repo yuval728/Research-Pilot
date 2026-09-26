@@ -14,13 +14,13 @@ Tests verify:
 
 from __future__ import annotations
 
+from dataclasses import FrozenInstanceError
 from datetime import datetime
 from unittest.mock import MagicMock
 
 import pytest
 
 from src.core.events import Event, EventBus, EventType, default_bus
-
 
 # ---------------------------------------------------------------------------
 # Event dataclass
@@ -42,9 +42,7 @@ class TestEvent:
 
     def test_frozen(self):
         ev = Event(type=EventType.RUN_STARTED, run_id="r1")
-        with pytest.raises(
-            Exception
-        ):  # dataclass frozen=True raises FrozenInstanceError
+        with pytest.raises(FrozenInstanceError):
             ev.run_id = "other"  # type: ignore[misc]
 
     def test_custom_payload(self):

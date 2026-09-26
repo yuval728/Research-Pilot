@@ -6,16 +6,16 @@ Pipeline run management — trigger runs, poll status, retry stages.
 
 from __future__ import annotations
 
+import asyncio
+import json
 import uuid
 from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import StreamingResponse
 
 from src.api.dependencies import CurrentUserDep, PipelineServiceDep
 from src.models.run import PipelineRun, StageResult
-from fastapi.responses import StreamingResponse
-import json
-import asyncio
 
 router = APIRouter(prefix="/pipeline", tags=["pipeline"])
 

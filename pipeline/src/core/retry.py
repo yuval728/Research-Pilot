@@ -33,11 +33,10 @@ Usage
 
 from __future__ import annotations
 
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from pydantic import ValidationError as PydanticValidationError
-from src.core.logger import get_logger
-
 from tenacity import (
     RetryCallState,
     retry,
@@ -48,6 +47,7 @@ from tenacity import (
 )
 
 from src.core.exceptions import LLMRateLimitError, LLMTimeoutError
+from src.core.logger import get_logger
 
 _F = TypeVar("_F", bound=Callable[..., Any])
 

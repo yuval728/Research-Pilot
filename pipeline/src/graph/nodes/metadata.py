@@ -21,6 +21,7 @@ Responsibilities
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import uuid
@@ -28,18 +29,16 @@ from pathlib import Path
 from typing import Any
 
 import litellm  # type: ignore[import-untyped]
+from sqlalchemy import text
 
+from src.core.config import get_settings
 from src.core.logger import get_logger
 from src.core.telemetry import TelemetryCollector, track_llm_call
 from src.core.utils import extract_json
-from src.graph.nodes._base import NodeContext, render_prompt
-from src.graph.state import PipelineState
-from src.core.config import get_settings
 from src.db.engine import get_supabase_client
 from src.db.session import get_db_context
-import asyncio
-from sqlalchemy import text
-
+from src.graph.nodes._base import NodeContext, render_prompt
+from src.graph.state import PipelineState
 from src.models.paper import PaperMetadata, PaperMetadataExtraction
 
 _STAGE = "metadata"
@@ -114,7 +113,7 @@ async def _load_cached_metadata(paper_id: str) -> PaperMetadata | None:
             return _extraction_to_metadata(
                 ext
             )  # Always non-None since title is set above
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.debug("metadata_cache_miss", reason=str(exc))
 
     return None
@@ -213,7 +212,7 @@ async def _persist_metadata(paper_id: str, result: PaperMetadataExtraction) -> N
             )
             await session.commit()
         log.debug("metadata_node.persisted", paper_id=paper_id)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.warning("metadata_node.persist_failed", reason=str(exc))
 
 
@@ -310,5 +309,5 @@ async def metadata_node(state: PipelineState) -> dict[str, Any]:
             ),
         }
 
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return ctx.mark_failed(exc)

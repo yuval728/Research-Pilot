@@ -16,7 +16,6 @@ from src.core.exceptions import (
     DependencyNotMetError,
     DuplicatePaperError,
     EmbeddingError,
-    StorageFileNotFoundError,
     FileUploadError,
     IngestionError,
     LLMError,
@@ -28,9 +27,9 @@ from src.core.exceptions import (
     ResearchPilotError,
     StageError,
     StorageError,
+    StorageFileNotFoundError,
     TokenBudgetExceededError,
 )
-
 
 # ---------------------------------------------------------------------------
 # Base
@@ -204,7 +203,7 @@ class TestTokenBudgetExceededError:
 
 class TestFileUploadError:
     def test_fields(self):
-        cause = IOError("disk full")
+        cause = OSError("disk full")
         err = FileUploadError(
             "upload failed", bucket="papers", path="a/b.pdf", cause=cause
         )

@@ -9,7 +9,6 @@ from __future__ import annotations
 import uuid
 
 import structlog
-
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
@@ -71,7 +70,7 @@ async def search_papers(
     except EmbeddingError:
         # Let global ResearchPilotError handler format a structured response.
         raise
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         structlog.get_logger(__name__).exception("search_failed", error=str(exc))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -125,7 +124,7 @@ async def similar_papers(
         )
     except EmbeddingError:
         raise
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         structlog.get_logger(__name__).exception(
             "similarity_search_failed", error=str(exc)
         )

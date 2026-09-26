@@ -8,12 +8,12 @@ summaries, diagrams, generated code, reports, and the assembled bundle.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
-from src.domains.ai_ml.schema import AiMlExtraction
 
+from src.domains.ai_ml.schema import AiMlExtraction
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -51,7 +51,7 @@ class SummaryOutput(BaseModel):
     level: SummaryLevel = Field(..., description="Granularity / style of this summary.")
     content: str = Field(..., min_length=1, description="The summary text.")
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="UTC timestamp when this summary was generated.",
     )
 
@@ -78,7 +78,7 @@ class DiagramOutput(BaseModel):
         pattern=r"^(mermaid|d2)$",
     )
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="UTC timestamp when this diagram was generated.",
     )
 
@@ -102,7 +102,7 @@ class CodeOutput(BaseModel):
         description="Description of any synthetic data generated to demonstrate the method.",
     )
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="UTC timestamp when code generation completed.",
     )
 
@@ -119,7 +119,7 @@ class ReportOutput(BaseModel):
         description="Relative path to the generated Markdown report file.",
     )
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="UTC timestamp when the report was written.",
     )
 

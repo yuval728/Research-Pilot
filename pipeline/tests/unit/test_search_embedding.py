@@ -9,8 +9,7 @@ import pytest
 
 os.environ["DEBUG"] = "false"
 
-from src.core.exceptions import StageError
-from src.core.exceptions import EmbeddingError
+from src.core.exceptions import EmbeddingError, StageError
 from src.graph.state import PipelineState
 from src.services.paper_service import PaperService
 

@@ -1,6 +1,6 @@
 import importlib
 import pkgutil
-from typing import Dict
+
 from src import domains
 from src.domains.base import DomainPlugin
 
@@ -13,7 +13,7 @@ class _DomainRegistry:
     """Registry for domain plugins."""
 
     def __init__(self) -> None:
-        self._plugins: Dict[str, DomainPlugin] = {}
+        self._plugins: dict[str, DomainPlugin] = {}
 
     def register(self, plugin: DomainPlugin) -> None:
         """Register a new domain plugin."""

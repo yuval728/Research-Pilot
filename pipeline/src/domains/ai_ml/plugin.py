@@ -1,10 +1,11 @@
 from pathlib import Path
+
 from pydantic import BaseModel
 
-from src.models.output import DiagramType
+from src.domains.ai_ml.schema import AiMlExtraction
 from src.domains.base import DomainPlugin
 from src.domains.registry import registry
-from src.domains.ai_ml.schema import AiMlExtraction
+from src.models.output import DiagramType
 
 
 class AiMlPlugin(DomainPlugin):

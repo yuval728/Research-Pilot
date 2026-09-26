@@ -86,3 +86,21 @@ addopts = [
     "--ignore=pipeline_demo_2.py",
     "--ignore=hello.py",
 ]
+
+[tool.ruff]
+exclude = [
+    "pipeline_demo.py",
+    "pipeline_demo_2.py",
+    "hello.py",
+    "e2e_test.py",
+]
+
+[tool.ruff.lint]
+ignore = [
+    "BLE001",  # Do not catch blind exception
+    "S110",    # try-except-pass
+    "PLW1510", # subprocess.run without check
+    "B008",    # Do not perform function call in argument defaults
+    "DTZ005",  # datetime.now() without tz
+    "TRY004",  # Prefer TypeError
+]

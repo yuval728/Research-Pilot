@@ -16,13 +16,13 @@ from src.graph.nodes.report import report_node
 from src.graph.nodes.summarise import summarise_node
 
 __all__ = [
+    "classify_node",
+    "codegen_node",
+    "diagram_node",
+    "embed_node",
+    "extract_node",
     "ingest_node",
     "metadata_node",
-    "classify_node",
-    "extract_node",
-    "summarise_node",
-    "embed_node",
-    "diagram_node",
-    "codegen_node",
     "report_node",
+    "summarise_node",
 ]

@@ -6,13 +6,13 @@ Paper ingestion and retrieval flow.
 
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import anyio
 import arxiv  # type: ignore[import-untyped]
 import httpx
 from litellm import aembedding
-from sqlalchemy import func, select, or_
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from supabase import Client
@@ -21,8 +21,13 @@ from src.core.config import get_settings
 from src.core.exceptions import EmbeddingError, FileUploadError
 from src.core.logger import get_logger
 from src.db.engine import get_supabase_client
-from src.db.models import EmbeddingORM, PaperORM, OutputORM, ExtractionORM
-from src.db.models import PipelineRunORM
+from src.db.models import (
+    EmbeddingORM,
+    ExtractionORM,
+    OutputORM,
+    PaperORM,
+    PipelineRunORM,
+)
 from src.models.paper import Paper, PaperListItem, PaperMetadata, PaperSource
 from src.models.run import PipelineRun, StageResult
 from src.services.converters import run_orm_to_pydantic, stage_orm_to_pydantic
@@ -69,11 +74,11 @@ class PaperService:
             source_url=orm.source_url,  # type: ignore[arg-type]
             pdf_storage_path=orm.pdf_storage_path,
             metadata=paper_metadata_model(orm.metadata_, paper_id=orm.id, log=log),
-            created_at=orm.created_at.replace(tzinfo=timezone.utc),
-            updated_at=orm.updated_at.replace(tzinfo=timezone.utc),
+            created_at=orm.created_at.replace(tzinfo=UTC),
+            updated_at=orm.updated_at.replace(tzinfo=UTC),
             user_id=self._normalize_uuid(getattr(orm, "user_id", None)),
             is_public=bool(orm.is_public),
-            published_at=orm.published_at.replace(tzinfo=timezone.utc)
+            published_at=orm.published_at.replace(tzinfo=UTC)
             if orm.published_at
             else None,
             imported_from_paper_id=self._normalize_uuid(
@@ -111,8 +116,8 @@ class PaperService:
             pdf_storage_path=pdf_storage_path,
             metadata_=metadata.model_dump() if metadata else None,
             user_id=parsed_user_id,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         self.db.add(orm)
         await self.db.commit()
@@ -324,9 +329,8 @@ class PaperService:
             selectinload(PaperORM.runs).selectinload(PipelineRunORM.stages)
         )
         # Note: simplistic filter example string
-        if filters:
-            if "source" in filters:
-                stmt = stmt.where(PaperORM.source == filters["source"])
+        if filters and "source" in filters:
+            stmt = stmt.where(PaperORM.source == filters["source"])
         if user_id:
             parsed_user_id = (
                 uuid.UUID(str(user_id)) if isinstance(user_id, str) else user_id
@@ -386,7 +390,7 @@ class PaperService:
                 raise ValueError(
                     f"expected {_EMBEDDING_DIM} dimensions, not {len(query_vec)}"
                 )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise EmbeddingError(
                 "Failed to generate a valid query embedding.",
                 model=settings.embedding.model,
@@ -482,7 +486,7 @@ class PaperService:
             raise ValueError(f"Paper {paper_id} not found or access denied")
 
         orm.is_public = True
-        orm.published_at = datetime.now(timezone.utc)
+        orm.published_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(orm)
         return self._to_pydantic(orm)
@@ -540,8 +544,8 @@ class PaperService:
             user_id=parsed_user_id,
             is_public=False,
             imported_from_paper_id=src_orm.id,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         self.db.add(new_orm)
 
@@ -552,7 +556,7 @@ class PaperService:
                 paper_id=new_paper_id,
                 output_type=out.output_type,
                 storage_path=out.storage_path,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
             self.db.add(new_out)
 
@@ -564,7 +568,7 @@ class PaperService:
                 domain=ext.domain,
                 schema_version=ext.schema_version,
                 data=dict(ext.data),
-                extracted_at=datetime.now(timezone.utc),
+                extracted_at=datetime.now(UTC),
             )
             self.db.add(new_ext)
 
@@ -575,7 +579,7 @@ class PaperService:
                 paper_id=new_paper_id,
                 chunk_type=emb.chunk_type,
                 embedding=emb.embedding,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
             self.db.add(new_emb)
 

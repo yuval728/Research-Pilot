@@ -17,8 +17,9 @@ Responsibilities
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator
+from typing import Any
 
 import sentry_sdk
 import sqlalchemy
@@ -32,7 +33,6 @@ from src.core.config import get_settings
 from src.core.exceptions import (
     DuplicatePaperError,
     EmbeddingError,
-    StorageFileNotFoundError,
     FileUploadError,
     IngestionError,
     LLMError,
@@ -42,6 +42,7 @@ from src.core.exceptions import (
     ResearchPilotError,
     StageError,
     StorageError,
+    StorageFileNotFoundError,
 )
 from src.core.logger import get_logger, setup_logging
 from src.db.session import engine
@@ -104,7 +105,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     try:
         async with engine.connect() as conn:
             await conn.execute(sqlalchemy.text("SELECT 1"))
-    except Exception:  # noqa: BLE001
+    except Exception:
         logger.warning("startup", step="warm_db_pool_failed")
 
     logger.info("startup", step="complete", environment=settings.environment)

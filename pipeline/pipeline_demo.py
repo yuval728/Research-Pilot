@@ -38,7 +38,7 @@ import textwrap
 import time
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 # ── rich console helpers ────────────────────────────────────────────────────
@@ -261,9 +261,10 @@ async def run_scenario(scenario: Scenario) -> PipelineState:
         else:
             # Synthetic paper with user-supplied metadata
             _ok("Creating synthetic paper record …")
-            from src.db.models import PaperORM
-            from datetime import datetime, timezone
             import uuid as _uuid
+            from datetime import datetime
+
+            from src.db.models import PaperORM
 
             paper_id = _uuid.uuid4()
             orm = PaperORM(
@@ -274,8 +275,8 @@ async def run_scenario(scenario: Scenario) -> PipelineState:
                 metadata_=scenario.paper_metadata.model_dump()
                 if scenario.paper_metadata
                 else None,
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
             )
             db.add(orm)
             await db.commit()
@@ -288,8 +289,8 @@ async def run_scenario(scenario: Scenario) -> PipelineState:
                 source_url=None,
                 pdf_storage_path=None,
                 metadata=scenario.paper_metadata,
-                created_at=orm.created_at.replace(tzinfo=timezone.utc),
-                updated_at=orm.updated_at.replace(tzinfo=timezone.utc),
+                created_at=orm.created_at.replace(tzinfo=UTC),
+                updated_at=orm.updated_at.replace(tzinfo=UTC),
                 user_id=None,
                 is_public=False,
                 published_at=None,

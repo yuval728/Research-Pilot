@@ -6,18 +6,6 @@ calls. Just data shapes and validation. Everything in the pipeline passes
 these models between stages.
 """
 
-from src.models.paper import (
-    Paper,
-    PaperCreate,
-    PaperMetadata,
-    PaperSource,
-)
-from src.models.run import (
-    PipelineRun,
-    RunStatus,
-    StageResult,
-    StageStatus,
-)
 from src.models.extraction import (
     ExtractionResult,
 )
@@ -30,26 +18,34 @@ from src.models.output import (
     SummaryLevel,
     SummaryOutput,
 )
+from src.models.paper import (
+    Paper,
+    PaperCreate,
+    PaperMetadata,
+    PaperSource,
+)
+from src.models.run import (
+    PipelineRun,
+    RunStatus,
+    StageResult,
+    StageStatus,
+)
 
 __all__ = [
-    # paper
+    "CodeOutput",
+    "DiagramOutput",
+    "DiagramType",
+    "ExtractionResult",
+    "OutputBundle",
     "Paper",
     "PaperCreate",
     "PaperMetadata",
     "PaperSource",
-    # run
     "PipelineRun",
+    "ReportOutput",
     "RunStatus",
     "StageResult",
     "StageStatus",
-    # extraction
-    "ExtractionResult",
-    # output
-    "CodeOutput",
-    "DiagramOutput",
-    "DiagramType",
-    "OutputBundle",
-    "ReportOutput",
     "SummaryLevel",
     "SummaryOutput",
 ]

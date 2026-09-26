@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -37,8 +37,8 @@ def _paper_orm_with_identifier(
         "domain": None,
         "sub_domain": None,
     }
-    orm.created_at = datetime.now(timezone.utc).replace(tzinfo=None)
-    orm.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    orm.created_at = datetime.now(UTC).replace(tzinfo=None)
+    orm.updated_at = datetime.now(UTC).replace(tzinfo=None)
     return orm
 
 

@@ -30,7 +30,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 # ---------------------------------------------------------------------------
 # Base
 # ---------------------------------------------------------------------------
@@ -331,7 +330,7 @@ class FileUploadError(StorageError):
         self.cause = cause
 
 
-class StorageFileNotFoundError(StorageError):  # noqa: A001 — intentional shadow
+class StorageFileNotFoundError(StorageError):
     """A requested file does not exist in Supabase Storage.
 
     Parameters

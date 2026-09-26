@@ -22,13 +22,15 @@ import uuid
 from typing import Any
 
 from sqlalchemy import select
-from src.db.engine import get_supabase_client
-from src.db.session import get_db_context
-from src.db.models import OutputORM
 
+from src.core.events import Event, EventType, default_bus
 from src.core.logger import get_logger
-from src.graph.state import PipelineState
+from src.db.engine import get_supabase_client
+from src.db.models import OutputORM
+from src.db.session import get_db_context
 from src.domains.ai_ml.schema import AiMlExtraction
+from src.graph.nodes._base import NodeContext
+from src.graph.state import PipelineState
 from src.models.output import (
     CodeOutput,
     DiagramOutput,
@@ -39,8 +41,6 @@ from src.models.output import (
 )
 from src.models.paper import PaperMetadata
 from src.models.run import StageStatus
-from src.graph.nodes._base import NodeContext
-from src.core.events import Event, EventType, default_bus
 
 _STAGE = "report"
 _OUTPUTS_BUCKET = "outputs"
@@ -284,7 +284,7 @@ async def _upload_report(paper_id: str, markdown: str) -> str:
                 file_options={"content-type": "text/markdown"},
             )
             return storage_path
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             log.warning("report_upload_skipped", reason=str(exc))
             return f"local://{paper_id}/report.md"
 
@@ -303,7 +303,7 @@ async def _store_report_output(paper_id: str, report: ReportOutput) -> None:
             )
             session.add(row)
             await session.commit()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.warning("report_store_failed", reason=str(exc))
 
 
@@ -319,7 +319,7 @@ async def _load_cached_report(paper_id: str) -> str | None:
             )
             res = await session.execute(stmt)
             return res.scalar_one_or_none()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.debug("report_cache_miss", reason=str(exc))
     return None
 
@@ -423,7 +423,7 @@ async def report_node(state: PipelineState) -> dict[str, Any]:
             **ret,
         }
 
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         ret = ctx.mark_failed(exc)
         default_bus.emit(
             Event(

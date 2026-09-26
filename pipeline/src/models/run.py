@@ -7,7 +7,7 @@ Data shapes for pipeline execution runs and per-stage status tracking.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -119,7 +119,7 @@ class PipelineRun(BaseModel):
         description="Top-level error message if the run failed catastrophically.",
     )
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="UTC timestamp when this run record was created.",
     )
 

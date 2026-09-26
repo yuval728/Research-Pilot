@@ -96,10 +96,9 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from src.core.logger import get_logger
-
 from langgraph.graph import END, START, StateGraph  # type: ignore[import-untyped]
 
+from src.core.logger import get_logger
 from src.graph.edges import (
     after_extract_route,
     should_continue_after_classify,
@@ -118,7 +117,6 @@ from src.graph.nodes import (
 )
 from src.graph.state import PipelineState
 from src.models.run import StageStatus
-
 
 # ---------------------------------------------------------------------------
 # Parallel stages node

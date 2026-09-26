@@ -28,7 +28,6 @@ from src.core.retry import (
     with_validation_retry,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -110,11 +109,14 @@ class TestLLMRetry:
         def fn():
             raise LLMRateLimitError("rate limit", model="m")
 
-        with patch(
-            "pipeline.core.retry.wait_random_exponential", return_value=iter([0, 0, 0])
+        with (
+            patch(
+                "pipeline.core.retry.wait_random_exponential",
+                return_value=iter([0, 0, 0]),
+            ),
+            pytest.raises(LLMRateLimitError),
         ):
-            with pytest.raises(LLMRateLimitError):
-                fn()
+            fn()
 
     def test_preserves_return_value(self):
         @llm_retry
@@ -244,8 +246,11 @@ class TestWithValidationRetry:
         def fn():
             raise _make_pydantic_validation_error()
 
-        with patch(
-            "pipeline.core.retry.wait_exponential_jitter", return_value=iter([0, 0, 0])
+        with (
+            patch(
+                "pipeline.core.retry.wait_exponential_jitter",
+                return_value=iter([0, 0, 0]),
+            ),
+            pytest.raises(ValidationError),
         ):
-            with pytest.raises(ValidationError):
-                fn()
+            fn()

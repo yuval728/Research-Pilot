@@ -7,11 +7,12 @@ Data shapes for research papers entering the pipeline.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Annotated
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field
+
 from src.models.run import PipelineRun
 
 
@@ -120,11 +121,11 @@ class Paper(BaseModel):
         description="Bibliographic metadata (populated after ingestion stage).",
     )
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="UTC timestamp when the record was created.",
     )
     updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="UTC timestamp of the last update.",
     )
     # Hybrid sharing fields
@@ -186,7 +187,7 @@ class PaperCreate(BaseModel):
         description="Optional title hint to speed up metadata extraction.",
     )
 
-    def model_post_init(self, __context: object) -> None:  # noqa: D102
+    def model_post_init(self, __context: object, /) -> None:
         if self.source == PaperSource.PDF_UPLOAD:
             if not self.pdf_file_path:
                 raise ValueError("pdf_file_path is required when source is PDF_UPLOAD.")
