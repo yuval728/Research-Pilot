@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import functools
 from typing import Any
@@ -12,9 +14,14 @@ _DOMAIN_JINJA_ENV = jinja2.Environment(autoescape=False)
 
 @functools.lru_cache(maxsize=32)
 def _get_compiled_domain_template(
-    domain_id: str, stage: str, version: int, template_str: str
+    plugin: DomainPlugin, stage: str, version: int
 ) -> jinja2.Template:
-    """Cache compiled Jinja2 Template object per domain/stage/version to avoid AST parsing overhead."""
+    """Cache compiled Jinja2 Template object per plugin/stage/version.
+
+    This avoids both repeated disk I/O (calling plugin.get_prompt) and
+    repeated Jinja2 AST parsing overhead on domain prompt renders.
+    """
+    template_str = plugin.get_prompt(stage, version)
     return _DOMAIN_JINJA_ENV.from_string(template_str)
 
 
@@ -41,8 +48,5 @@ class DomainPlugin(abc.ABC):
 
     def render_prompt(self, stage: str, version: int, **context: Any) -> str:
         """Loads and renders the Jinja2 template with the provided context."""
-        template_str = self.get_prompt(stage, version)
-        template = _get_compiled_domain_template(
-            self.domain_id, stage, version, template_str
-        )
+        template = _get_compiled_domain_template(self, stage, version)
         return template.render(**context)
