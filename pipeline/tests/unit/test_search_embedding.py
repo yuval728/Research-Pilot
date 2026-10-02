@@ -65,3 +65,56 @@ async def test_ingest_existing_paper_missing_source_raises_typed_stage_error() -
 
     with pytest.raises(StageError, match="Failed to fetch PDF for existing paper"):
         await ingest_node(state)
+
+
+@pytest.mark.asyncio
+async def test_embed_node_batches_aembedding_requests() -> None:
+    from src.domains.ai_ml.schema import AiMlExtraction
+    from src.graph.nodes.embed import embed_node
+    from src.models.paper import PaperMetadata
+    from src.models.run import StageStatus
+
+    extraction = AiMlExtraction(
+        problem_statement="How to scale Transformers?",
+        key_contributions=["Sparse attention", "Linear memory complexity"],
+        proposed_method_summary="We introduce a novel sparse attention mechanism.",
+        main_results="Achieves 3x speedup with zero loss in perplexity.",
+    )
+
+    state: PipelineState = {
+        "run_id": str(uuid.uuid4()),
+        "paper_id": str(uuid.uuid4()),
+        "extraction": extraction.model_dump(),
+        "paper_metadata": PaperMetadata(title="Sparse Transformer", authors=["Test Author"]),
+        "stage_statuses": {},
+        "token_usage": {},
+        "errors": [],
+        "cached_stages": set(),
+    }
+
+    mock_embeddings_data = [
+        {"embedding": [0.1] * 1536},
+        {"embedding": [0.2] * 1536},
+        {"embedding": [0.3] * 1536},
+        {"embedding": [0.4] * 1536},
+    ]
+
+    with (
+        patch("src.graph.nodes.embed._load_cached_embeddings", new_callable=AsyncMock) as mock_cache,
+        patch("src.graph.nodes.embed._store_embeddings", new_callable=AsyncMock) as mock_store,
+        patch("litellm.aembedding", new_callable=AsyncMock) as mock_embed,
+    ):
+        mock_cache.return_value = False
+        mock_embed.return_value = SimpleNamespace(data=mock_embeddings_data)
+
+        res = await embed_node(state)
+
+        assert res["stage_statuses"]["embed"] == StageStatus.COMPLETED
+        # Must make exactly 1 single batched API call for all chunks
+        assert mock_embed.call_count == 1
+        inputs = mock_embed.await_args.kwargs["input"]
+        assert isinstance(inputs, list)
+        assert len(inputs) == 4
+        assert "Sparse Transformer" in inputs[0]
+        assert "Sparse attention" in inputs[1]
+        assert mock_store.call_count == 1
