@@ -16,23 +16,21 @@ Responsibilities
 from __future__ import annotations
 
 import asyncio
+import io
+import json
 import uuid
 from pathlib import Path
 from typing import Any
 
 import litellm
-import io
-import json
 import pypdf
 from sqlalchemy import select
-from src.db.session import get_db_context
-
 
 from src.core.config import get_settings
 from src.core.logger import get_logger
 from src.core.telemetry import TelemetryCollector, track_llm_call
-
 from src.db.models import OutputORM
+from src.db.session import get_db_context
 from src.domains.ai_ml.schema import AiMlExtraction
 from src.graph.nodes._base import NodeContext, render_prompt
 from src.graph.state import PipelineState
@@ -92,7 +90,7 @@ async def _store_summaries(paper_id: str, summaries: list[SummaryOutput]) -> Non
                 )
                 session.add(row)
             await session.commit()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.warning("summarise_store_failed", reason=str(exc))
 
 
@@ -112,7 +110,7 @@ async def _load_cached_summaries(paper_id: str) -> list[SummaryOutput]:
             for orm in orms:
                 summaries.append(OutputDeserializer.parse_summary(orm))
             return summaries
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.debug("summarise_cache_miss", reason=str(exc))
     return []
 
@@ -179,7 +177,7 @@ async def summarise_node(state: PipelineState) -> dict[str, Any]:
 
                 paper_text = await asyncio.to_thread(_extract)
                 log.debug("summarise_node.text_extracted", length=len(paper_text or ""))
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 log.warning("summarise_node.text_extraction_failed", reason=str(exc))
 
         collector = TelemetryCollector(run_id=ctx.run_id, paper_id=ctx.paper_id)
@@ -251,7 +249,7 @@ async def summarise_node(state: PipelineState) -> dict[str, Any]:
             ),
         }
 
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return {
             "summaries": [],
             **ctx.mark_failed(exc),

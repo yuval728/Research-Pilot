@@ -7,6 +7,7 @@ Schemas for AI/ML domains.
 from __future__ import annotations
 
 from enum import Enum
+
 from pydantic import BaseModel, ConfigDict, Field
 
 

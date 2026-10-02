@@ -75,7 +75,7 @@ async def health_detailed() -> DetailedHealthResponse:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
         deps["database"] = DependencyStatus(healthy=True)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         deps["database"] = DependencyStatus(healthy=False, detail=str(exc))
 
     # --- Supabase Storage ---
@@ -93,7 +93,7 @@ async def health_detailed() -> DetailedHealthResponse:
             healthy=resp.status_code < 500,
             detail=None if resp.status_code < 500 else f"HTTP {resp.status_code}",
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         deps["supabase_storage"] = DependencyStatus(healthy=False, detail=str(exc))
 
     # --- LLM API (LiteLLM reachability) ---
@@ -107,7 +107,7 @@ async def health_detailed() -> DetailedHealthResponse:
             healthy=resp.status_code < 500,
             detail=None if resp.status_code < 500 else f"HTTP {resp.status_code}",
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         deps["llm_api"] = DependencyStatus(healthy=False, detail=str(exc))
 
     overall = "ok" if all(d.healthy for d in deps.values()) else "degraded"

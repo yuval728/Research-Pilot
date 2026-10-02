@@ -9,8 +9,8 @@ conversion logic was duplicated (Issue #18).
 
 from __future__ import annotations
 
-from datetime import timezone
 import json
+from datetime import UTC
 
 from src.db.models import OutputORM, PipelineRunORM, StageResultORM
 from src.models.output import (
@@ -114,12 +114,8 @@ def stage_orm_to_pydantic(orm: StageResultORM) -> StageResult:
     return StageResult(
         stage_name=orm.stage_name,
         status=StageStatus(orm.status),
-        started_at=orm.started_at.replace(tzinfo=timezone.utc)
-        if orm.started_at
-        else None,
-        completed_at=orm.completed_at.replace(tzinfo=timezone.utc)
-        if orm.completed_at
-        else None,
+        started_at=orm.started_at.replace(tzinfo=UTC) if orm.started_at else None,
+        completed_at=orm.completed_at.replace(tzinfo=UTC) if orm.completed_at else None,
         error_message=orm.error_message,
         cached=orm.cached,
         token_count=orm.token_count,
@@ -132,15 +128,11 @@ def run_orm_to_pydantic(orm: PipelineRunORM) -> PipelineRun:
         id=orm.id,
         paper_id=orm.paper_id,
         status=RunStatus(orm.status),
-        started_at=orm.started_at.replace(tzinfo=timezone.utc)
-        if orm.started_at
-        else None,
-        completed_at=orm.completed_at.replace(tzinfo=timezone.utc)
-        if orm.completed_at
-        else None,
+        started_at=orm.started_at.replace(tzinfo=UTC) if orm.started_at else None,
+        completed_at=orm.completed_at.replace(tzinfo=UTC) if orm.completed_at else None,
         total_tokens=orm.total_tokens,
         error=orm.error,
-        created_at=orm.created_at.replace(tzinfo=timezone.utc),
+        created_at=orm.created_at.replace(tzinfo=UTC),
         stages={},
     )
     if orm.stages:

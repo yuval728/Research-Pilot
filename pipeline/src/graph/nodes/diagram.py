@@ -56,7 +56,7 @@ from typing import Any
 
 import litellm  # type: ignore[import-untyped]
 from pydantic import BaseModel, Field
-
+from sqlalchemy import select
 
 from src.core.config import get_settings
 from src.core.logger import get_logger
@@ -65,7 +65,6 @@ from src.core.utils import extract_json
 from src.db.engine import get_supabase_client
 from src.db.models import OutputORM
 from src.db.session import get_db_context
-from sqlalchemy import select
 from src.domains.ai_ml.schema import AiMlExtraction
 from src.graph.nodes._base import NodeContext, render_prompt
 from src.graph.state import PipelineState
@@ -349,7 +348,7 @@ async def _upload_svg(paper_id: str, diagram_type: DiagramType, dsl: str) -> str
 
             return storage_path
 
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             log.warning(
                 "diagram_node.svg_upload_skipped",
                 diagram_type=diagram_type.value,
@@ -373,7 +372,7 @@ async def _store_diagram(paper_id: str, diagram: DiagramOutput) -> None:
             )
             session.add(row)
             await session.commit()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.warning("diagram_store_failed", reason=str(exc))
 
 
@@ -393,7 +392,7 @@ async def _load_cached_diagrams(paper_id: str) -> list[DiagramOutput]:
             for orm in orms:
                 diagrams.append(OutputDeserializer.parse_diagram(orm))
             return diagrams
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.debug("diagram_cache_miss", reason=str(exc))
     return []
 
@@ -511,7 +510,7 @@ async def diagram_node(state: PipelineState) -> dict[str, Any]:
             ),
         }
 
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return {
             "diagrams": [],
             **ctx.mark_failed(exc),

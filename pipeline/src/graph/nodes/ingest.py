@@ -31,21 +31,21 @@ stable across the whole pipeline run.
 
 from __future__ import annotations
 
-import hashlib
-import uuid
-import arxiv  # type: ignore[import-untyped]
 import asyncio
-import httpx
+import hashlib
 import json
-from sqlalchemy import text
+import uuid
 from typing import Any
 
-from src.db.session import get_db_context
+import arxiv  # type: ignore[import-untyped]
+import httpx
+from sqlalchemy import text
+
+from src.core.exceptions import DuplicatePaperError, PDFFetchError, StageError
+from src.core.logger import get_logger
 from src.db.engine import get_supabase_client
 from src.db.models import PaperORM
-
-from src.core.exceptions import PDFFetchError, DuplicatePaperError, StageError
-from src.core.logger import get_logger
+from src.db.session import get_db_context
 from src.graph.nodes._base import NodeContext
 from src.graph.state import PipelineState
 from src.models.paper import PaperMetadata, PaperSource
@@ -127,7 +127,7 @@ async def _check_duplicate(content_hash: str) -> None:
             )
     except DuplicatePaperError:
         raise
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.warning("duplicate_check_skipped", reason=str(exc))
 
 
@@ -189,7 +189,7 @@ async def _update_paper_storage_path(
                 },
             )
             await session.commit()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.warning("ingest_node.db_update_skipped", reason=str(exc))
 
 
@@ -269,7 +269,7 @@ async def ingest_node(state: PipelineState) -> dict[str, Any]:
                         run_id=ctx.run_id,
                         cause=exc,
                     ) from exc
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     raise StageError(
                         "Failed to fetch PDF for existing paper.",
                         stage_name=_STAGE,
@@ -288,7 +288,7 @@ async def ingest_node(state: PipelineState) -> dict[str, Any]:
 
             try:
                 await _upload_pdf(pdf_bytes, storage_path)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 log.warning(
                     "ingest_node.upload_skipped", reason=str(exc), run_id=ctx.run_id
                 )
@@ -325,7 +325,7 @@ async def ingest_node(state: PipelineState) -> dict[str, Any]:
 
         try:
             await _upload_pdf(pdf_bytes, storage_path)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             log.warning(
                 "ingest_node.upload_skipped", reason=str(exc), run_id=ctx.run_id
             )
@@ -335,7 +335,7 @@ async def ingest_node(state: PipelineState) -> dict[str, Any]:
             await _create_paper_row(
                 paper_id, source, storage_path, metadata, content_hash
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             log.warning(
                 "ingest_node.db_write_skipped", reason=str(exc), run_id=ctx.run_id
             )
@@ -360,5 +360,5 @@ async def ingest_node(state: PipelineState) -> dict[str, Any]:
     except StageError:
         raise
 
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return ctx.mark_failed(exc)

@@ -43,22 +43,23 @@ from __future__ import annotations
 
 import base64
 import uuid
+from collections.abc import Awaitable
 from pathlib import Path
-from typing import Any, Awaitable, cast
+from typing import Any, cast
 
 import instructor  # type: ignore[import-untyped]
 import litellm  # type: ignore[import-untyped]
 from openai.types.chat import ChatCompletionMessageParam
 from sqlalchemy import text
 
+from src.core.config import AppSettings
 from src.core.logger import get_logger
 from src.core.telemetry import TelemetryCollector, track_llm_call
-from src.graph.nodes._base import NodeContext, render_prompt
-from src.graph.state import PipelineState
-from src.core.config import AppSettings
-from src.domains.ai_ml.schema import AiMlExtraction
 from src.db.models import ExtractionORM
 from src.db.session import get_db_context
+from src.domains.ai_ml.schema import AiMlExtraction
+from src.graph.nodes._base import NodeContext, render_prompt
+from src.graph.state import PipelineState
 
 _STAGE = "extract"
 _SCHEMA_VERSION = "1.0"
@@ -90,7 +91,7 @@ async def _load_cached_extraction(paper_id: str) -> AiMlExtraction | None:
             row = res.fetchone()
         if row:
             return AiMlExtraction.model_validate(row.data)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.debug("extract_cache_miss", reason=str(exc))
 
     return None
@@ -171,7 +172,7 @@ async def _store_extraction(
             )
             session.add(row)
             await session.commit()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.warning("extract_store_failed", reason=str(exc))
 
 
@@ -250,5 +251,5 @@ async def extract_node(state: PipelineState) -> dict[str, Any]:
             ),
         }
 
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return ctx.mark_failed(exc)

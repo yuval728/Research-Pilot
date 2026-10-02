@@ -101,9 +101,9 @@ def _block(text: str, label: str | None = None, max_lines: int | None = None) ->
 try:
     from src.core.config import get_settings
     from src.db.session import get_db_context
+    from src.domains.ai_ml.schema import AiMlExtraction
     from src.graph.pipeline import research_pipeline
     from src.graph.state import PipelineState, make_initial_state
-    from src.domains.ai_ml.schema import AiMlExtraction
     from src.models.output import DiagramType, SummaryLevel
     from src.models.run import StageStatus
     from src.services.paper_service import PaperService

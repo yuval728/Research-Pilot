@@ -21,19 +21,19 @@ This stage powers all semantic search functionality in the app.
 
 from __future__ import annotations
 
-import uuid
 import asyncio
+import uuid
 from typing import Any
 
 import litellm
 from sqlalchemy import select
-from src.db.session import get_db_context
-from src.db.models import EmbeddingORM
 
 from src.core.logger import get_logger
+from src.db.models import EmbeddingORM
+from src.db.session import get_db_context
+from src.domains.ai_ml.schema import AiMlExtraction
 from src.graph.nodes._base import NodeContext
 from src.graph.state import PipelineState
-from src.domains.ai_ml.schema import AiMlExtraction
 
 _STAGE = "embed"
 
@@ -127,7 +127,7 @@ async def _store_embeddings(
                 )
                 session.add(row)
             await session.commit()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.warning("embed_store_failed", reason=str(exc))
 
 
@@ -142,7 +142,7 @@ async def _load_cached_embeddings(paper_id: str) -> bool:
             )
             res = await session.execute(stmt)
             return res.scalar_one_or_none() is not None
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.debug("embed_cache_miss", reason=str(exc))
         return False
 
@@ -225,5 +225,5 @@ async def embed_node(state: PipelineState) -> dict[str, Any]:
             }
         )
 
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return ctx.mark_failed(exc)

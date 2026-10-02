@@ -17,8 +17,8 @@ from __future__ import annotations
 
 import os
 import uuid
-from datetime import datetime, timezone
-from typing import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator, Generator
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -69,7 +69,7 @@ async def test_db() -> AsyncGenerator[AsyncSession, None]:
     engine = create_async_engine(_SQLITE_URL, echo=False)
 
     # Import ORM Base only inside fixture to avoid top-level DB connection
-    from src.db.models import Base  # noqa: PLC0415
+    from src.db.models import Base
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -100,7 +100,7 @@ def test_client() -> Generator[TestClient, None, None]:
     * ``domain_registry`` — auto_discover is a no-op.
     * Sentry SDK init   — no-op.
     """
-    from src.api.main import create_app  # noqa: PLC0415
+    from src.api.main import create_app
 
     fake_settings = _make_fake_settings()
 
@@ -176,8 +176,8 @@ def sample_paper() -> Paper:
             domain="NLP",
             sub_domain="Machine Translation",
         ),
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
-        updated_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        created_at=datetime(2024, 1, 1, tzinfo=UTC),
+        updated_at=datetime(2024, 1, 1, tzinfo=UTC),
         user_id=None,
         is_public=False,
         published_at=None,
@@ -269,7 +269,7 @@ def pdf_bytes() -> bytes:
 
 def _make_fake_settings():
     """Build an AppSettings-like object with fake credentials for testing."""
-    from unittest.mock import MagicMock  # noqa: PLC0415
+    from unittest.mock import MagicMock
 
     settings = MagicMock()
     settings.environment = "development"

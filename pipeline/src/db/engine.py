@@ -16,6 +16,7 @@ from __future__ import annotations
 import functools
 
 from supabase import Client, create_client  # type: ignore[import-untyped]
+
 from src.core.config import get_settings
 
 

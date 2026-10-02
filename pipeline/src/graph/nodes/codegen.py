@@ -19,31 +19,28 @@ Responsibilities
 from __future__ import annotations
 
 import ast
+import asyncio
 import json
 import re
 import uuid
 from pathlib import Path
 from typing import Any
-import asyncio
 
-from sqlalchemy import select
-from src.db.session import get_db_context
-from src.db.models import OutputORM
-
-import nbformat  # type: ignore[import-untyped]
 import litellm  # type: ignore[import-untyped]
+import nbformat  # type: ignore[import-untyped]
 from pydantic import BaseModel, Field
-
-
-from src.db.engine import get_supabase_client
+from sqlalchemy import select
 
 from src.core.config import get_settings
 from src.core.logger import get_logger
 from src.core.telemetry import TelemetryCollector, track_llm_call
 from src.core.utils import extract_json
+from src.db.engine import get_supabase_client
+from src.db.models import OutputORM
+from src.db.session import get_db_context
+from src.domains.ai_ml.schema import AiMlExtraction
 from src.graph.nodes._base import NodeContext, render_prompt
 from src.graph.state import PipelineState
-from src.domains.ai_ml.schema import AiMlExtraction
 from src.models.output import CodeOutput
 from src.services.converters import OutputDeserializer
 
@@ -176,7 +173,7 @@ def _build_notebook(python_code: str, paper_metadata: Any | None) -> bytes:
     title = "Research Implementation"
     if paper_metadata:
         if hasattr(paper_metadata, "title"):
-            title = getattr(paper_metadata, "title")
+            title = paper_metadata.title
         elif isinstance(paper_metadata, dict):
             title = paper_metadata.get("title", title)
 
@@ -229,7 +226,7 @@ async def _upload_artefacts(
 
             return py_path, nb_path
 
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             log.warning("codegen_upload_skipped", reason=str(exc))
             return None, None
 
@@ -259,7 +256,7 @@ async def _store_code_output(paper_id: str, code_output: CodeOutput) -> None:
                     )
                 )
             await session.commit()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.warning("codegen_store_failed", reason=str(exc))
 
 
@@ -276,7 +273,7 @@ async def _load_cached_code(paper_id: str) -> CodeOutput | None:
             rows = res.scalars().all()
             if rows:
                 return OutputDeserializer.parse_code(list(rows))
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.debug("codegen_cache_miss", reason=str(exc))
     return None
 
@@ -389,7 +386,7 @@ async def codegen_node(state: PipelineState) -> dict[str, Any]:
             ),
         }
 
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return {
             "code_output": None,
             **ctx.mark_failed(exc),

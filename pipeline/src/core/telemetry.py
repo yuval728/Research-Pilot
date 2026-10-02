@@ -24,15 +24,17 @@ Usage
 from __future__ import annotations
 
 import time
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any, Generator
+from typing import Any
+
 import litellm
 from langfuse import Langfuse
+
 from src.core.config import get_settings
 from src.core.logger import get_logger
-
 
 # ---------------------------------------------------------------------------
 # TelemetryRecord — one LLM call
@@ -189,7 +191,7 @@ class TelemetryCollector:
                 },
             )
 
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             get_logger(__name__).warning(
                 "langfuse_flush_failed",
                 run_id=record.run_id,
@@ -265,7 +267,7 @@ class _LLMCallContext:
 
             try:
                 cost_usd = litellm.completion_cost(completion_response=self._response)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
 
         return TelemetryRecord(

@@ -43,6 +43,7 @@ JSONB column directly.
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import uuid
@@ -51,17 +52,16 @@ from typing import Any
 
 import litellm  # type: ignore[import-untyped]
 from pydantic import BaseModel, Field
+from sqlalchemy import text
 
 from src.core.config import get_settings
 from src.core.logger import get_logger
 from src.core.telemetry import TelemetryCollector, track_llm_call
 from src.core.utils import extract_json
-from src.graph.nodes._base import NodeContext, render_prompt
-from src.graph.state import PipelineState
 from src.db.engine import get_supabase_client
 from src.db.session import get_db_context
-import asyncio
-from sqlalchemy import text
+from src.graph.nodes._base import NodeContext, render_prompt
+from src.graph.state import PipelineState
 
 _STAGE = "classify"
 _PROMPT_PATH = Path(__file__).parent.parent.parent / "prompts" / "classify_v1.j2"
@@ -192,7 +192,7 @@ async def _load_cached_classification(paper_id: str) -> ClassificationResult | N
                 sub_domain=row.sub_domain or "",
                 confidence=float(row.confidence or 0.0),
             )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.debug("classify_cache_miss", reason=str(exc))
 
     return None
@@ -223,7 +223,7 @@ async def _persist_classification(paper_id: str, result: ClassificationResult) -
             )
             await session.commit()
         log.debug("classify_node.classification_persisted", paper_id=paper_id)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         log.warning("classify_node.persist_failed", reason=str(exc))
 
 
@@ -308,5 +308,5 @@ async def classify_node(state: PipelineState) -> dict[str, Any]:
             ),
         }
 
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return ctx.mark_failed(exc)

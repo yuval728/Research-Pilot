@@ -6,9 +6,10 @@ Business logic for managing LangGraph pipeline runs and viewing statuses.
 
 import asyncio
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
+import structlog
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -20,7 +21,6 @@ from src.graph.state import PipelineState, make_initial_state
 from src.models.run import PipelineRun, RunStatus, StageResult, StageStatus
 from src.services.converters import run_orm_to_pydantic, stage_orm_to_pydantic
 from src.services.paper_metadata import paper_metadata_model
-import structlog
 
 log = structlog.get_logger(__name__)
 
@@ -56,7 +56,7 @@ class PipelineService:
     @staticmethod
     def _extract_state(update_dict: dict[str, Any]) -> dict[str, Any] | None:
         last_state: dict[str, Any] | None = None
-        for _, state in update_dict.items():
+        for state in update_dict.values():
             last_state = state
         return last_state
 
@@ -78,7 +78,7 @@ class PipelineService:
         existing_rows = existing_res.scalars().all()
         existing_by_stage = {row.stage_name: row for row in existing_rows}
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         for stage_name, status in stage_statuses.items():
             status_val = status.value if hasattr(status, "value") else status
             token_count = token_usage.get(stage_name)
@@ -131,7 +131,7 @@ class PipelineService:
                 if run_orm:
                     run_orm.status = RunStatus.RUNNING.value
                     if run_orm.started_at is None:
-                        run_orm.started_at = datetime.now(timezone.utc)
+                        run_orm.started_at = datetime.now(UTC)
                     await session.commit()
 
             async for update_dict in research_pipeline.astream(initial_state):  # type: ignore[arg-type]
@@ -179,7 +179,7 @@ class PipelineService:
                         ),
                         None,
                     )
-                    run_orm.completed_at = datetime.now(timezone.utc)
+                    run_orm.completed_at = datetime.now(UTC)
                     await session.commit()
         except Exception as exc:
             async with get_db_context() as session:
@@ -187,7 +187,7 @@ class PipelineService:
                 if run_orm:
                     run_orm.status = RunStatus.FAILED.value
                     run_orm.error = str(exc)
-                    run_orm.completed_at = datetime.now(timezone.utc)
+                    run_orm.completed_at = datetime.now(UTC)
                     await session.commit()
             raise
 
@@ -219,8 +219,8 @@ class PipelineService:
             id=run_id,
             paper_id=paper_id,
             status=RunStatus.PENDING.value,
-            started_at=datetime.now(timezone.utc),
-            created_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
+            created_at=datetime.now(UTC),
         )
         self.db.add(run_orm)
         await self.db.commit()

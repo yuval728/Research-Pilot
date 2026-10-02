@@ -23,7 +23,6 @@ from src.core.telemetry import (
     track_llm_call,
 )
 
-
 # ---------------------------------------------------------------------------
 # TelemetryRecord
 # ---------------------------------------------------------------------------
@@ -183,9 +182,11 @@ class TestTrackLLMCall:
     def test_record_added_even_on_exception(self):
         """Telemetry should be recorded even if the LLM call raises."""
         collector = self._make_collector()
-        with pytest.raises(RuntimeError):
-            with track_llm_call(collector, stage_name="extract", model="llm/flash"):
-                raise RuntimeError("boom")
+        with (
+            pytest.raises(RuntimeError),
+            track_llm_call(collector, stage_name="extract", model="llm/flash"),
+        ):
+            raise RuntimeError("boom")
         # Record is still appended (with zeroed counts)
         assert len(collector.records) == 1
 

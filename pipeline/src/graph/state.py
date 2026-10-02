@@ -15,11 +15,11 @@ Design rules
 from __future__ import annotations
 
 import uuid
-from typing import Any
-
-from typing_extensions import NotRequired, TypedDict
+from typing import Any, NotRequired
 
 from pydantic import BaseModel
+from typing_extensions import TypedDict
+
 from src.models.output import CodeOutput, DiagramOutput, SummaryOutput
 from src.models.paper import PaperMetadata
 from src.models.run import StageStatus

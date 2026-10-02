@@ -10,11 +10,10 @@ of information in every paper. Confidence scoring lives in ExtractionResult.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # ---------------------------------------------------------------------------
 # Wrapper returned by the extraction stage
@@ -52,6 +51,6 @@ class ExtractionResult(BaseModel):
         description="Aggregate LLM confidence for the extraction.",
     )
     extracted_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="UTC timestamp when extraction completed.",
     )

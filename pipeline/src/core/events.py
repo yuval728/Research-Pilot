@@ -28,12 +28,12 @@ from __future__ import annotations
 
 import enum
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any, Callable
+from typing import Any
 
 from src.core.logger import get_logger
-
 
 # ---------------------------------------------------------------------------
 # Event types
@@ -192,7 +192,7 @@ class EventBus:
         for handler in handlers:
             try:
                 handler(event)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 log.warning(
                     "event_handler_error",
                     handler=handler.__qualname__,

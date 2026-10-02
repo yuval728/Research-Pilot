@@ -15,7 +15,7 @@ Tests verify:
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from pydantic import ValidationError
@@ -48,7 +48,6 @@ from src.models.run import (
     StageResult,
     StageStatus,
 )
-
 
 # ===========================================================================
 # paper.py
@@ -210,12 +209,12 @@ class TestStageResult:
     def test_duration_none_if_only_started(self):
         sr = StageResult(
             stage_name="ingestion",
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
         )
         assert sr.duration_seconds is None
 
     def test_duration_computed_correctly(self):
-        start = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        start = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
         end = start + timedelta(seconds=42)
         sr = StageResult(
             stage_name="extraction",
