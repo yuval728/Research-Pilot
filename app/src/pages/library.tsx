@@ -88,47 +88,55 @@ export default function LibraryPage() {
 
   const baseList = searchResults !== null ? searchResults : papers;
 
-  const displayPapers = baseList
-    .filter((p) => {
-      if (!p.metadata) return false;
+  // Bolt Optimization: Memoize filtering and sorting to avoid redundant array
+  // allocations and Date/string comparisons on every component re-render.
+  const displayPapers = useMemo(() => {
+    return baseList
+      .filter((p) => {
+        if (!p.metadata) return false;
 
-      if (activeDomain !== 'All Domains' && p.metadata.domain !== activeDomain) {
-        return false;
-      }
+        if (activeDomain !== 'All Domains' && p.metadata.domain !== activeDomain) {
+          return false;
+        }
 
-      if (
-        activeSubdomain !== 'All Subdomains' &&
-        p.metadata.sub_domain !== activeSubdomain
-      ) {
-        return false;
-      }
+        if (
+          activeSubdomain !== 'All Subdomains' &&
+          p.metadata.sub_domain !== activeSubdomain
+        ) {
+          return false;
+        }
 
-      if (searchResults === null && searchQuery.trim().length > 2) {
-        const q = searchQuery.toLowerCase();
-        return (
-          p.metadata.title.toLowerCase().includes(q) ||
-          p.metadata.authors.some((a) => a.toLowerCase().includes(q))
-        );
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'Oldest':
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-        case 'Title A-Z':
-          return (a.metadata?.title ?? '').localeCompare(b.metadata?.title ?? '');
-        case 'Title Z-A':
-          return (b.metadata?.title ?? '').localeCompare(a.metadata?.title ?? '');
-        case 'Newest':
-        default:
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      }
-    });
+        if (searchResults === null && searchQuery.trim().length > 2) {
+          const q = searchQuery.toLowerCase();
+          return (
+            p.metadata.title.toLowerCase().includes(q) ||
+            p.metadata.authors.some((a) => a.toLowerCase().includes(q))
+          );
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        switch (sortBy) {
+          case 'Oldest':
+            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          case 'Title A-Z':
+            return (a.metadata?.title ?? '').localeCompare(b.metadata?.title ?? '');
+          case 'Title Z-A':
+            return (b.metadata?.title ?? '').localeCompare(a.metadata?.title ?? '');
+          case 'Newest':
+          default:
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
+      });
+  }, [baseList, activeDomain, activeSubdomain, searchResults, searchQuery, sortBy]);
 
   const isEmpty = !isLoading && displayPapers.length === 0;
-  const latestRunByPaperId = Object.fromEntries(
-    paperItems.map((item) => [item.paper.id, item.latest_run]),
+
+  // Bolt Optimization: Memoize latest run lookup map creation to prevent Object.fromEntries
+  // and array mapping overhead on every render.
+  const latestRunByPaperId = useMemo(
+    () => Object.fromEntries(paperItems.map((item) => [item.paper.id, item.latest_run])),
+    [paperItems],
   );
 
   const handlePublish = (updated: Paper) => {
