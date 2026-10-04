@@ -85,7 +85,9 @@ async def test_embed_node_batches_aembedding_requests() -> None:
         "run_id": str(uuid.uuid4()),
         "paper_id": str(uuid.uuid4()),
         "extraction": extraction.model_dump(),
-        "paper_metadata": PaperMetadata(title="Sparse Transformer", authors=["Test Author"]),
+        "paper_metadata": PaperMetadata(
+            title="Sparse Transformer", authors=["Test Author"]
+        ),
         "stage_statuses": {},
         "token_usage": {},
         "errors": [],
@@ -100,8 +102,12 @@ async def test_embed_node_batches_aembedding_requests() -> None:
     ]
 
     with (
-        patch("src.graph.nodes.embed._load_cached_embeddings", new_callable=AsyncMock) as mock_cache,
-        patch("src.graph.nodes.embed._store_embeddings", new_callable=AsyncMock) as mock_store,
+        patch(
+            "src.graph.nodes.embed._load_cached_embeddings", new_callable=AsyncMock
+        ) as mock_cache,
+        patch(
+            "src.graph.nodes.embed._store_embeddings", new_callable=AsyncMock
+        ) as mock_store,
         patch("litellm.aembedding", new_callable=AsyncMock) as mock_embed,
     ):
         mock_cache.return_value = False
