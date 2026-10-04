@@ -84,7 +84,7 @@ async def test_embed_node_batches_aembedding_requests() -> None:
     state: PipelineState = {
         "run_id": str(uuid.uuid4()),
         "paper_id": str(uuid.uuid4()),
-        "extraction": extraction.model_dump(),
+        "extraction": extraction,
         "paper_metadata": PaperMetadata(
             title="Sparse Transformer", authors=["Test Author"]
         ),
@@ -118,6 +118,7 @@ async def test_embed_node_batches_aembedding_requests() -> None:
         assert res["stage_statuses"]["embed"] == StageStatus.COMPLETED
         # Must make exactly 1 single batched API call for all chunks
         assert mock_embed.call_count == 1
+        assert mock_embed.await_args is not None
         inputs = mock_embed.await_args.kwargs["input"]
         assert isinstance(inputs, list)
         assert len(inputs) == 4
