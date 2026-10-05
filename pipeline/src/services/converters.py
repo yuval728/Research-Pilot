@@ -12,7 +12,13 @@ from __future__ import annotations
 import json
 from datetime import UTC
 
-from src.db.models import OutputORM, PipelineRunORM, StageResultORM
+from src.db.models import BatchJobItemORM, BatchJobORM, OutputORM, PipelineRunORM, StageResultORM
+from src.models.batch import (
+    BatchItemStatus,
+    BatchJobItemResponse,
+    BatchJobResponse,
+    BatchJobStatus,
+)
 from src.models.output import (
     CodeOutput,
     DiagramOutput,
@@ -139,3 +145,32 @@ def run_orm_to_pydantic(orm: PipelineRunORM) -> PipelineRun:
         for s in orm.stages:
             run.stages[s.stage_name] = stage_orm_to_pydantic(s)
     return run
+
+
+def batch_item_orm_to_pydantic(orm: BatchJobItemORM) -> BatchJobItemResponse:
+    """Convert BatchJobItemORM to BatchJobItemResponse."""
+    return BatchJobItemResponse(
+        id=orm.id,
+        batch_id=orm.batch_id,
+        paper_id=orm.paper_id,
+        run_id=orm.run_id,
+        status=BatchItemStatus(orm.status),
+        error=orm.error,
+        created_at=orm.created_at.replace(tzinfo=UTC),
+        updated_at=orm.updated_at.replace(tzinfo=UTC),
+    )
+
+
+def batch_orm_to_pydantic(orm: BatchJobORM) -> BatchJobResponse:
+    """Convert BatchJobORM to BatchJobResponse, including its items."""
+    return BatchJobResponse(
+        id=orm.id,
+        user_id=orm.user_id,
+        status=BatchJobStatus(orm.status),
+        total_papers=orm.total_papers,
+        completed_papers=orm.completed_papers,
+        failed_papers=orm.failed_papers,
+        items=[batch_item_orm_to_pydantic(item) for item in (orm.items or [])],
+        created_at=orm.created_at.replace(tzinfo=UTC),
+        updated_at=orm.updated_at.replace(tzinfo=UTC),
+    )

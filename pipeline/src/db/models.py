@@ -192,3 +192,63 @@ class OutputORM(Base):
 
     # Relationships
     paper: Mapped["PaperORM"] = relationship("PaperORM", back_populates="outputs")
+
+
+class BatchJobORM(Base):
+    __tablename__ = "batch_jobs"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), nullable=True, index=True
+    )
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending")
+    total_papers: Mapped[int] = mapped_column(Integer, default=0)
+    completed_papers: Mapped[int] = mapped_column(Integer, default=0)
+    failed_papers: Mapped[int] = mapped_column(Integer, default=0)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    items: Mapped[list["BatchJobItemORM"]] = relationship(
+        "BatchJobItemORM", back_populates="batch", cascade="all, delete-orphan"
+    )
+
+
+class BatchJobItemORM(Base):
+    __tablename__ = "batch_job_items"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    batch_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("batch_jobs.id", ondelete="CASCADE"), index=True
+    )
+    paper_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("papers.id", ondelete="CASCADE"), index=True
+    )
+    run_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("pipeline_runs.id", ondelete="SET NULL"), nullable=True
+    )
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending")
+    error: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    batch: Mapped["BatchJobORM"] = relationship("BatchJobORM", back_populates="items")
+    paper: Mapped["PaperORM"] = relationship("PaperORM")
+    run: Mapped["PipelineRunORM | None"] = relationship("PipelineRunORM")
