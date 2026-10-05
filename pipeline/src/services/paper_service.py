@@ -433,6 +433,24 @@ class PaperService:
                 cause=exc,
             ) from exc
 
+        # Performance Optimization:
+        # Pushing paper permission filter into distance_subq restricts vector similarity math
+        # and GROUP BY paper_id ONLY to paper embeddings accessible to the current user.
+        # This prevents computing cosine distance across all stored embeddings in the DB.
+        visible_papers_stmt = select(PaperORM.id)
+        if user_id:
+            parsed_user_id = (
+                uuid.UUID(str(user_id)) if isinstance(user_id, str) else user_id
+            )
+            visible_papers_stmt = visible_papers_stmt.where(
+                or_(
+                    PaperORM.user_id == parsed_user_id,
+                    PaperORM.is_public,
+                )
+            )
+        else:
+            visible_papers_stmt = visible_papers_stmt.where(PaperORM.is_public)
+
         distance_subq = (
             select(
                 EmbeddingORM.paper_id.label("paper_id"),
@@ -440,27 +458,17 @@ class PaperService:
                     "best_distance"
                 ),
             )
+            .where(EmbeddingORM.paper_id.in_(visible_papers_stmt))
             .group_by(EmbeddingORM.paper_id)
             .subquery()
         )
 
-        stmt = select(PaperORM).join(
-            distance_subq, PaperORM.id == distance_subq.c.paper_id
+        stmt = (
+            select(PaperORM)
+            .join(distance_subq, PaperORM.id == distance_subq.c.paper_id)
+            .order_by(distance_subq.c.best_distance)
+            .limit(limit)
         )
-        if user_id:
-            parsed_user_id = (
-                uuid.UUID(str(user_id)) if isinstance(user_id, str) else user_id
-            )
-            stmt = stmt.where(
-                or_(
-                    PaperORM.user_id == parsed_user_id,
-                    PaperORM.is_public,
-                )
-            )
-        else:
-            stmt = stmt.where(PaperORM.is_public)
-
-        stmt = stmt.order_by(distance_subq.c.best_distance).limit(limit)
         result = await self.db.execute(stmt)
         orms = result.scalars().all()
         return [self._to_pydantic(orm) for orm in orms]
