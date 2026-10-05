@@ -107,11 +107,12 @@ async def _embed_chunks(
 
     results: list[tuple[str, list[float]]] = []
     for (chunk_type, _), data in zip(chunks, response.data):
-        vector: list[float] = (
+        raw_vector = (
             getattr(data, "embedding", None)
             if hasattr(data, "embedding")
             else data["embedding"]
         )
+        vector: list[float] = [float(v) for v in (raw_vector or [])]
         log.debug(
             "embed_node.chunk_embedded",
             chunk_type=chunk_type,

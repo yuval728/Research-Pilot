@@ -84,8 +84,10 @@ async def test_embed_node_batches_aembedding_requests() -> None:
     state: PipelineState = {
         "run_id": str(uuid.uuid4()),
         "paper_id": str(uuid.uuid4()),
-        "extraction": extraction.model_dump(),
-        "paper_metadata": PaperMetadata(title="Sparse Transformer", authors=["Test Author"]),
+        "extraction": extraction,
+        "paper_metadata": PaperMetadata(
+            title="Sparse Transformer", authors=["Test Author"]
+        ),
         "stage_statuses": {},
         "token_usage": {},
         "errors": [],
@@ -100,8 +102,12 @@ async def test_embed_node_batches_aembedding_requests() -> None:
     ]
 
     with (
-        patch("src.graph.nodes.embed._load_cached_embeddings", new_callable=AsyncMock) as mock_cache,
-        patch("src.graph.nodes.embed._store_embeddings", new_callable=AsyncMock) as mock_store,
+        patch(
+            "src.graph.nodes.embed._load_cached_embeddings", new_callable=AsyncMock
+        ) as mock_cache,
+        patch(
+            "src.graph.nodes.embed._store_embeddings", new_callable=AsyncMock
+        ) as mock_store,
         patch("litellm.aembedding", new_callable=AsyncMock) as mock_embed,
     ):
         mock_cache.return_value = False
@@ -112,6 +118,7 @@ async def test_embed_node_batches_aembedding_requests() -> None:
         assert res["stage_statuses"]["embed"] == StageStatus.COMPLETED
         # Must make exactly 1 single batched API call for all chunks
         assert mock_embed.call_count == 1
+        assert mock_embed.await_args is not None
         inputs = mock_embed.await_args.kwargs["input"]
         assert isinstance(inputs, list)
         assert len(inputs) == 4
