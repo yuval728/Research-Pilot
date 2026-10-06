@@ -277,10 +277,10 @@ async def stream_batch_status(
                         break
 
                     await asyncio.sleep(1)
-                except Exception as exc:
+                except Exception:
                     error_count += 1
                     if error_count >= max_errors:
-                        yield f"data: {json.dumps({'error': 'Stream failed after repeated errors', 'detail': str(exc)})}\n\n"
+                        yield f"data: {json.dumps({'error': 'Stream failed after repeated errors'})}\n\n"
                         break
                     delay = base_delay * (2 ** (error_count - 1))
                     await asyncio.sleep(delay)
