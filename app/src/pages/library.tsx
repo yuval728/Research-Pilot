@@ -1,13 +1,16 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, BookOpen, Filter, Layers3 } from 'lucide-react';
+import { Plus, BookOpen, Filter, Layers3, CheckSquare, Square, Play, X } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { SearchBar } from '@/components/library/search-bar';
 import { PaperCard } from '@/components/library/paper-card';
+import { BatchProgressModal } from '@/components/library/batch-progress-modal';
 import { papersApi } from '@/lib/api/papers';
+import { pipelineApi } from '@/lib/api/pipeline';
 import { searchApi } from '@/lib/api/search';
 import { Paper, PaperListItem } from '@/types';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const SORT_OPTIONS = ['Newest', 'Oldest', 'Title A-Z', 'Title Z-A'] as const;
 type SortOption = (typeof SORT_OPTIONS)[number];
@@ -22,6 +25,14 @@ export default function LibraryPage() {
   const [activeDomain, setActiveDomain] = useState('All Domains');
   const [activeSubdomain, setActiveSubdomain] = useState('All Subdomains');
   const [sortBy, setSortBy] = useState<SortOption>('Newest');
+
+  // Multi-select & Batch execution
+  const [selectedPaperIds, setSelectedPaperIds] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [activeBatchId, setActiveBatchId] = useState<string | null>(null);
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+  const [isStartingBatch, setIsStartingBatch] = useState(false);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -139,6 +150,52 @@ export default function LibraryPage() {
     [paperItems],
   );
 
+  const paperTitlesById = useMemo(
+    () =>
+      Object.fromEntries(
+        papers.map((p) => [p.id, p.metadata?.title || 'Untitled Paper']),
+      ),
+    [papers],
+  );
+
+  const handleSelectToggle = useCallback((paperId: string) => {
+    setSelectedPaperIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(paperId)) {
+        next.delete(paperId);
+      } else {
+        next.add(paperId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    if (selectedPaperIds.size === displayPapers.length) {
+      setSelectedPaperIds(new Set());
+    } else {
+      setSelectedPaperIds(new Set(displayPapers.map((p) => p.id)));
+    }
+  }, [displayPapers, selectedPaperIds]);
+
+  const handleTriggerBatch = async () => {
+    if (selectedPaperIds.size === 0 || isStartingBatch) return;
+    setIsStartingBatch(true);
+    try {
+      const batch = await pipelineApi.triggerBatch(Array.from(selectedPaperIds));
+      setActiveBatchId(batch.id);
+      setIsBatchModalOpen(true);
+      setSelectedPaperIds(new Set());
+      setIsSelectionMode(false);
+      toast.success(`Batch processing queued for ${batch.total_papers} papers`);
+    } catch (err: any) {
+      console.error('Failed to trigger batch processing:', err);
+      toast.error(err.message || 'Failed to start batch processing');
+    } finally {
+      setIsStartingBatch(false);
+    }
+  };
+
   const handlePublish = (updated: Paper) => {
     setPapers((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
     setPaperItems((prev) =>
@@ -157,6 +214,64 @@ export default function LibraryPage() {
 
       <div className="p-8 max-w-6xl mx-auto w-full space-y-8">
         <SearchBar onSearch={handleSearch} isSearching={isSearching} />
+
+        {/* Selection Bar & Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-secondary/20 p-3 rounded-lg border border-border">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={isSelectionMode ? 'secondary' : 'outline'}
+              size="sm"
+              onClick={() => {
+                if (isSelectionMode) {
+                  setIsSelectionMode(false);
+                  setSelectedPaperIds(new Set());
+                } else {
+                  setIsSelectionMode(true);
+                }
+              }}
+              className="h-8 text-xs font-semibold gap-1.5"
+            >
+              {isSelectionMode ? <X className="w-3.5 h-3.5" /> : <CheckSquare className="w-3.5 h-3.5" />}
+              {isSelectionMode ? 'Cancel Selection' : 'Select Papers'}
+            </Button>
+
+            {isSelectionMode && displayPapers.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSelectAll}
+                className="h-8 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+              >
+                {selectedPaperIds.size === displayPapers.length ? (
+                  <Square className="w-3.5 h-3.5" />
+                ) : (
+                  <CheckSquare className="w-3.5 h-3.5" />
+                )}
+                {selectedPaperIds.size === displayPapers.length ? 'Deselect All' : 'Select All'}
+              </Button>
+            )}
+
+            {selectedPaperIds.size > 0 && (
+              <span className="text-xs font-bold text-primary pl-2">
+                {selectedPaperIds.size} paper{selectedPaperIds.size > 1 ? 's' : ''} selected
+              </span>
+            )}
+          </div>
+
+          {selectedPaperIds.size > 0 && (
+            <Button
+              size="sm"
+              onClick={handleTriggerBatch}
+              disabled={isStartingBatch}
+              className="h-8 text-xs font-bold bg-primary hover:bg-primary/90 gap-1.5 animate-in fade-in"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              {isStartingBatch
+                ? 'Queueing…'
+                : `Process Selected (${selectedPaperIds.size})`}
+            </Button>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
           <div className="relative lg:col-span-1">
@@ -228,6 +343,9 @@ export default function LibraryPage() {
                 paper={paper}
                 pipelineRun={latestRunByPaperId[paper.id] ?? null}
                 onPublish={handlePublish}
+                isSelected={selectedPaperIds.has(paper.id)}
+                onSelectToggle={isSelectionMode ? handleSelectToggle : undefined}
+                selectionMode={isSelectionMode}
               />
             ))}
           </div>
@@ -252,6 +370,13 @@ export default function LibraryPage() {
           </div>
         )}
       </div>
+
+      <BatchProgressModal
+        batchId={activeBatchId}
+        isOpen={isBatchModalOpen}
+        onClose={() => setIsBatchModalOpen(false)}
+        paperTitlesById={paperTitlesById}
+      />
     </div>
   );
 }

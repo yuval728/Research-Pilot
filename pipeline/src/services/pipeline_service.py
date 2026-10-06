@@ -14,12 +14,17 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.db.models import PaperORM, PipelineRunORM, StageResultORM
+from src.db.models import BatchJobItemORM, BatchJobORM, PaperORM, PipelineRunORM, StageResultORM
 from src.db.session import get_db_context
 from src.graph.pipeline import research_pipeline
 from src.graph.state import PipelineState, make_initial_state
+from src.models.batch import BatchItemStatus, BatchJobResponse, BatchJobStatus
 from src.models.run import PipelineRun, RunStatus, StageResult, StageStatus
-from src.services.converters import run_orm_to_pydantic, stage_orm_to_pydantic
+from src.services.converters import (
+    batch_orm_to_pydantic,
+    run_orm_to_pydantic,
+    stage_orm_to_pydantic,
+)
 from src.services.paper_metadata import paper_metadata_model
 
 log = structlog.get_logger(__name__)
@@ -252,6 +257,230 @@ class PipelineService:
         task.add_done_callback(self._on_pipeline_task_done)
 
         return self._to_run_pydantic(run_orm)
+
+    async def trigger_batch_run(
+        self,
+        paper_ids: list[uuid.UUID],
+        user_id: str | uuid.UUID | None = None,
+        max_concurrency: int = 3,
+    ) -> BatchJobResponse:
+        """Enqueues a batch pipeline execution for multiple papers with concurrency control."""
+        if not paper_ids:
+            raise ValueError("paper_ids list cannot be empty")
+
+        parsed_user_id = (
+            uuid.UUID(str(user_id)) if user_id and isinstance(user_id, str) else user_id
+        )
+
+        # Validate access for all requested papers
+        stmt = select(PaperORM.id).where(PaperORM.id.in_(paper_ids))
+        if parsed_user_id:
+            stmt = stmt.where(PaperORM.user_id == parsed_user_id)
+
+        res = await self.db.execute(stmt)
+        found_ids = set(res.scalars().all())
+
+        missing_ids = set(paper_ids) - found_ids
+        if missing_ids:
+            missing_str = ", ".join(str(i) for i in missing_ids)
+            raise ValueError(f"Papers not found or access denied: {missing_str}")
+
+        batch_id = uuid.uuid4()
+        batch_orm = BatchJobORM(
+            id=batch_id,
+            user_id=parsed_user_id,
+            status=BatchJobStatus.PENDING.value,
+            total_papers=len(paper_ids),
+            completed_papers=0,
+            failed_papers=0,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+        self.db.add(batch_orm)
+
+        for paper_id in paper_ids:
+            item_id = uuid.uuid4()
+            item_orm = BatchJobItemORM(
+                id=item_id,
+                batch_id=batch_id,
+                paper_id=paper_id,
+                status=BatchItemStatus.PENDING.value,
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            )
+            self.db.add(item_orm)
+
+        await self.db.commit()
+
+        # Fetch loaded record
+        stmt_loaded = (
+            select(BatchJobORM)
+            .where(BatchJobORM.id == batch_id)
+            .options(selectinload(BatchJobORM.items))
+        )
+        res_loaded = await self.db.execute(stmt_loaded)
+        batch_orm = res_loaded.scalar_one()
+
+        # Enqueue background processing
+        loop = asyncio.get_running_loop()
+        task = loop.create_task(
+            self._execute_batch_job(batch_id=batch_id, max_concurrency=max_concurrency)
+        )
+        task.add_done_callback(self._on_pipeline_task_done)
+
+        return batch_orm_to_pydantic(batch_orm)
+
+    async def _execute_batch_job(
+        self, batch_id: uuid.UUID, max_concurrency: int = 3
+    ) -> None:
+        """Process batch job items with concurrency control and partial failure resilience."""
+        semaphore = asyncio.Semaphore(max_concurrency)
+
+        async with get_db_context() as session:
+            batch_orm = await session.get(
+                BatchJobORM,
+                batch_id,
+                options=[selectinload(BatchJobORM.items)],
+            )
+            if not batch_orm:
+                return
+            batch_orm.status = BatchJobStatus.PROCESSING.value
+            batch_orm.updated_at = datetime.now(UTC)
+            await session.commit()
+            item_ids = [item.id for item in batch_orm.items]
+
+        async def _process_item(item_id: uuid.UUID) -> None:
+            async with semaphore:
+                paper_id = None
+                try:
+                    async with get_db_context() as session:
+                        item_orm = await session.get(BatchJobItemORM, item_id)
+                        if not item_orm:
+                            return
+                        paper_id = item_orm.paper_id
+                        paper_orm = await session.get(PaperORM, paper_id)
+                        if not paper_orm:
+                            item_orm.status = BatchItemStatus.FAILED.value
+                            item_orm.error = f"Paper {paper_id} not found"
+                            item_orm.updated_at = datetime.now(UTC)
+                            await session.commit()
+                            return
+
+                        run_id = uuid.uuid4()
+                        run_orm = PipelineRunORM(
+                            id=run_id,
+                            paper_id=paper_id,
+                            status=RunStatus.PENDING.value,
+                            started_at=datetime.now(UTC),
+                            created_at=datetime.now(UTC),
+                        )
+                        session.add(run_orm)
+
+                        item_orm.run_id = run_id
+                        item_orm.status = BatchItemStatus.PROCESSING.value
+                        item_orm.updated_at = datetime.now(UTC)
+                        await session.commit()
+
+                        metadata = paper_metadata_model(
+                            paper_orm.metadata_, paper_id=paper_orm.id, log=log
+                        )
+                        pdf_path = paper_orm.pdf_storage_path
+
+                    initial_state = make_initial_state(
+                        run_id=str(run_id),
+                        paper_metadata=metadata,
+                        extra={
+                            "paper_id": str(paper_id),
+                            "pdf_storage_path": pdf_path,
+                        },
+                    )
+
+                    await self._execute_pipeline_run(run_id, initial_state)
+
+                    async with get_db_context() as session:
+                        item_orm = await session.get(BatchJobItemORM, item_id)
+                        run_orm = await session.get(PipelineRunORM, run_id)
+                        if item_orm and run_orm:
+                            if run_orm.status in (
+                                RunStatus.COMPLETED.value,
+                                RunStatus.PARTIAL.value,
+                            ):
+                                item_orm.status = BatchItemStatus.COMPLETED.value
+                            else:
+                                item_orm.status = BatchItemStatus.FAILED.value
+                                item_orm.error = run_orm.error or "Pipeline run failed"
+                            item_orm.updated_at = datetime.now(UTC)
+                            await session.commit()
+
+                except Exception as exc:
+                    log.error(
+                        "batch_item_processing_failed",
+                        item_id=str(item_id),
+                        error=str(exc),
+                    )
+                    async with get_db_context() as session:
+                        item_orm = await session.get(BatchJobItemORM, item_id)
+                        if item_orm:
+                            item_orm.status = BatchItemStatus.FAILED.value
+                            item_orm.error = str(exc)
+                            item_orm.updated_at = datetime.now(UTC)
+                            await session.commit()
+
+        tasks = [_process_item(item_id) for item_id in item_ids]
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Finalize batch state
+        async with get_db_context() as session:
+            batch_orm = await session.get(
+                BatchJobORM,
+                batch_id,
+                options=[selectinload(BatchJobORM.items)],
+            )
+            if batch_orm:
+                completed = sum(
+                    1
+                    for item in batch_orm.items
+                    if item.status == BatchItemStatus.COMPLETED.value
+                )
+                failed = sum(
+                    1
+                    for item in batch_orm.items
+                    if item.status == BatchItemStatus.FAILED.value
+                )
+                batch_orm.completed_papers = completed
+                batch_orm.failed_papers = failed
+
+                if failed == 0:
+                    batch_orm.status = BatchJobStatus.COMPLETED.value
+                elif completed > 0:
+                    batch_orm.status = BatchJobStatus.PARTIAL.value
+                else:
+                    batch_orm.status = BatchJobStatus.FAILED.value
+
+                batch_orm.updated_at = datetime.now(UTC)
+                await session.commit()
+
+    async def get_batch_status(
+        self, batch_id: uuid.UUID, user_id: str | uuid.UUID | None = None
+    ) -> BatchJobResponse:
+        """Fetch status of a batch job and all item statuses."""
+        stmt = (
+            select(BatchJobORM)
+            .where(BatchJobORM.id == batch_id)
+            .options(selectinload(BatchJobORM.items))
+        )
+        if user_id:
+            parsed_user_id = (
+                uuid.UUID(str(user_id)) if isinstance(user_id, str) else user_id
+            )
+            stmt = stmt.where(BatchJobORM.user_id == parsed_user_id)
+
+        res = await self.db.execute(stmt)
+        batch_orm = res.scalar_one_or_none()
+        if not batch_orm:
+            raise ValueError(f"BatchJob {batch_id} not found or access denied")
+
+        return batch_orm_to_pydantic(batch_orm)
 
     @staticmethod
     def _on_pipeline_task_done(task: asyncio.Task) -> None:

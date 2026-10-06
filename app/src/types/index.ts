@@ -65,6 +65,36 @@ export interface StageResult {
 }
 
 // ---------------------------------------------------------------------------
+// Batch Job
+// ---------------------------------------------------------------------------
+
+export type BatchJobStatus = 'pending' | 'processing' | 'completed' | 'partial' | 'failed';
+export type BatchItemStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
+export interface BatchJobItem {
+  id: string;
+  batch_id: string;
+  paper_id: string;
+  run_id: string | null;
+  status: BatchItemStatus;
+  error: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BatchJob {
+  id: string;
+  user_id: string | null;
+  status: BatchJobStatus;
+  total_papers: number;
+  completed_papers: number;
+  failed_papers: number;
+  items: BatchJobItem[];
+  created_at: string;
+  updated_at: string;
+}
+
+// ---------------------------------------------------------------------------
 // Output Bundle
 // ---------------------------------------------------------------------------
 

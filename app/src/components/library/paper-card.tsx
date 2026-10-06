@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronRight, Code2, FileText, GitBranch, Globe, Lock, Upload } from 'lucide-react';
+import { Check, ChevronRight, Code2, FileText, GitBranch, Globe, Lock, Upload } from 'lucide-react';
 import { Paper, PipelineRun } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,11 +18,22 @@ interface PaperCardProps {
   onPublish?: (updated: Paper) => void;
   /** Called after a successful import of a public paper. */
   onImport?: (paperId: string) => void;
+  isSelected?: boolean;
+  onSelectToggle?: (paperId: string) => void;
+  selectionMode?: boolean;
 }
 
 type DisplayStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 
-export function PaperCard({ paper, pipelineRun, onPublish, onImport }: PaperCardProps) {
+export function PaperCard({
+  paper,
+  pipelineRun,
+  onPublish,
+  onImport,
+  isSelected = false,
+  onSelectToggle,
+  selectionMode = false,
+}: PaperCardProps) {
   const navigate = useNavigate();
   const status = toDisplayStatus(pipelineRun);
   const displayStatus: DisplayStatus =
@@ -50,9 +61,37 @@ export function PaperCard({ paper, pipelineRun, onPublish, onImport }: PaperCard
   const canImport = paper.is_public && !!onImport;
 
   return (
-    <Card className="bg-card border-border hover:border-primary/60 transition-all group overflow-hidden h-full">
+    <Card
+      className={cn(
+        'bg-card border-border hover:border-primary/60 transition-all group overflow-hidden h-full relative',
+        isSelected && 'border-primary ring-1 ring-primary/40 bg-primary/5',
+      )}
+      onClick={
+        selectionMode && onSelectToggle
+          ? () => onSelectToggle(paper.id)
+          : undefined
+      }
+    >
       <CardHeader className="p-5 pb-3">
         <div className="flex items-start justify-between gap-3 mb-3">
+          {onSelectToggle && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectToggle(paper.id);
+              }}
+              className={cn(
+                'h-5 w-5 rounded border flex items-center justify-center transition-colors shrink-0 mr-1',
+                isSelected
+                  ? 'bg-primary border-primary text-primary-foreground'
+                  : 'border-muted-foreground/40 bg-background hover:border-primary',
+              )}
+              aria-label={isSelected ? 'Deselect paper' : 'Select paper'}
+            >
+              {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+            </button>
+          )}
           <div className="flex gap-2 flex-wrap max-w-[70%]">
             {meta?.domain && (
               <Badge
