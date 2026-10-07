@@ -139,12 +139,12 @@ export default function LibraryPage() {
     [paperItems],
   );
 
-  const handlePublish = (updated: Paper) => {
+  const handlePublish = useCallback((updated: Paper) => {
     setPapers((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
     setPaperItems((prev) =>
       prev.map((item) => (item.paper.id === updated.id ? { ...item, paper: updated } : item)),
     );
-  };
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen">
