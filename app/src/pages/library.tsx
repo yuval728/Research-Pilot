@@ -139,12 +139,14 @@ export default function LibraryPage() {
     [paperItems],
   );
 
-  const handlePublish = (updated: Paper) => {
+  // Bolt Optimization: Stabilize callback with useCallback so React.memo on PaperCard
+  // can effectively skip re-renders when parent component updates.
+  const handlePublish = useCallback((updated: Paper) => {
     setPapers((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
     setPaperItems((prev) =>
       prev.map((item) => (item.paper.id === updated.id ? { ...item, paper: updated } : item)),
     );
-  };
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen">

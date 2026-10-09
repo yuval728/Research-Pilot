@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BookOpen, Filter, Globe, Layers3 } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { PaperCard } from '@/components/library/paper-card';
@@ -112,9 +112,11 @@ export default function ExplorePage() {
     [paperItems],
   );
 
-  const handleImport = (_paperId: string) => {
+  // Bolt Optimization: Stabilize callback with useCallback so React.memo on PaperCard
+  // can effectively skip re-renders when parent component updates.
+  const handleImport = useCallback((_paperId: string) => {
     toast.success('Imported to your library');
-  };
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen">
