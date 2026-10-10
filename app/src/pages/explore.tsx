@@ -112,9 +112,9 @@ export default function ExplorePage() {
     [paperItems],
   );
 
-  const handleImport = (_paperId: string) => {
+  const handleImport = useCallback((_paperId: string) => {
     toast.success('Imported to your library');
-  };
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen">

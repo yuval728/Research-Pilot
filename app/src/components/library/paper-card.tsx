@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, Code2, FileText, GitBranch, Globe, Lock, Upload } from 'lucide-react';
 import { Paper, PipelineRun } from '@/types';
@@ -22,7 +22,11 @@ interface PaperCardProps {
 
 type DisplayStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 
-export function PaperCard({ paper, pipelineRun, onPublish, onImport }: PaperCardProps) {
+// Bolt Performance Optimization:
+// Memoize PaperCard to prevent unnecessary re-rendering of all paper cards in library and explore
+// views when parent component state (e.g. search query, active domain filter, sort option, or polling)
+// updates unless the paper, pipelineRun, or callback props actually change.
+export const PaperCard = memo(function PaperCard({ paper, pipelineRun, onPublish, onImport }: PaperCardProps) {
   const navigate = useNavigate();
   const status = toDisplayStatus(pipelineRun);
   const displayStatus: DisplayStatus =
@@ -198,7 +202,7 @@ export function PaperCard({ paper, pipelineRun, onPublish, onImport }: PaperCard
       </CardFooter>
     </Card>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Sub-components
