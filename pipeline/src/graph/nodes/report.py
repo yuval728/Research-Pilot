@@ -152,9 +152,7 @@ def _build_markdown(
     # `json.dumps(extraction.model_dump(mode="json"), indent=2)`. This avoids constructing
     # an intermediate Python dictionary tree and performs string serialization directly in
     # compiled C/Rust code (~7x faster).
-    extraction_json = (
-        extraction.model_dump_json(indent=2) if extraction else "{}"
-    )
+    extraction_json = extraction.model_dump_json(indent=2) if extraction else "{}"
 
     # ── Metadata links ───────────────────────────────────────────────────────
     links: list[str] = []
