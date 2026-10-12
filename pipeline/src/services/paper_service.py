@@ -474,7 +474,10 @@ class PaperService:
         return [self._to_pydantic(orm) for orm in orms]
 
     async def find_similar_papers(
-        self, paper_id: uuid.UUID, limit: int = 5, user_id: str | uuid.UUID | None = None
+        self,
+        paper_id: uuid.UUID,
+        limit: int = 5,
+        user_id: str | uuid.UUID | None = None,
     ) -> list[Paper]:
         """Find papers similar to paper_id using stored vector embeddings if available.
 
@@ -501,8 +504,7 @@ class PaperService:
 
         if src_embeddings:
             distance_exprs = [
-                EmbeddingORM.embedding.cosine_distance(emb)
-                for emb in src_embeddings
+                EmbeddingORM.embedding.cosine_distance(emb) for emb in src_embeddings
             ]
 
             visible_papers_stmt = select(PaperORM.id).where(PaperORM.id != paper_id)
