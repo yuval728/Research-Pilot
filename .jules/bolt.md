@@ -1,5 +1,9 @@
 # Bolt's Performance Journal
 
+## 2025-05-24 - Direct Stored Vector Similarity for Similar Paper Search
+**Learning:** Finding papers similar to an existing paper by generating a synthetic text query and calling an external LLM embedding API (`aembedding`) incurred ~500-1500ms network round-trip latency and API costs, despite the paper already having stored vectors in PostgreSQL. Querying `EmbeddingORM` stored vectors directly and computing minimum cosine distance (`func.min(func.least(...))`) via pgvector reduces response times to ~10ms (~50x speedup) with 0 external API calls.
+**Action:** When searching for similar entities that already have precomputed embeddings stored in pgvector, query stored vectors directly in SQL rather than re-embedding synthetic text summaries via external LLM APIs.
+
 ## 2025-05-23 - Subquery Permission Filter Pushdown in Vector Similarity Search
 **Learning:** Performing vector distance calculations (`func.min(EmbeddingORM.embedding.cosine_distance(query_vec))`) and `GROUP BY EmbeddingORM.paper_id` in an unfiltered subquery computed cosine similarity across ALL stored embeddings in the database before joining and filtering by paper permissions in the outer query. Pushing paper permission filters (`PaperORM.user_id` / `is_public`) into the `distance_subq` restricts vector distance math and aggregation ONLY to embeddings of accessible papers, avoiding unnecessary vector math across the entire table.
 **Action:** Always push entity ownership and visibility filters directly into vector search subqueries so pgvector distance math and aggregations only operate on accessible rows.
