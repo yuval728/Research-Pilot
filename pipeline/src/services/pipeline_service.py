@@ -69,9 +69,18 @@ class PipelineService:
         token_usage: dict[str, int],
         cached_stages: set[str],
         errors: list[Any],
-    ) -> None:
+    ) -> bool:
+        """Persist stage updates to the database only when attributes actually change.
+
+        Performance Optimization:
+        -------------------------
+        LangGraph streams intermediate state updates frequently during pipeline execution.
+        Comparing incoming values against existing ORM fields ensures we only modify
+        attributes that have truly changed, returning True if any delta occurred. This
+        avoids redundant `session.commit()` database transactions on unchanged stream ticks.
+        """
         if not stage_statuses:
-            return
+            return False
 
         existing_stmt = select(StageResultORM).where(StageResultORM.run_id == run_id)
         existing_res = await session.execute(existing_stmt)
@@ -79,6 +88,8 @@ class PipelineService:
         existing_by_stage = {row.stage_name: row for row in existing_rows}
 
         now = datetime.now(UTC)
+        has_changes = False
+
         for stage_name, status in stage_statuses.items():
             status_val = status.value if hasattr(status, "value") else status
             token_count = token_usage.get(stage_name)
@@ -107,20 +118,33 @@ class PipelineService:
                     stage_orm.completed_at = now
                 session.add(stage_orm)
                 existing_by_stage[stage_name] = stage_orm
+                has_changes = True
                 continue
 
-            # Persist only real deltas to avoid churn.
-            stage_orm.status = status_val
-            stage_orm.cached = cached
-            stage_orm.token_count = token_count
-            stage_orm.error_message = error_message
+            # Persist only real deltas to avoid session dirtying and DB commit churn.
+            if stage_orm.status != status_val:
+                stage_orm.status = status_val
+                has_changes = True
+            if stage_orm.cached != cached:
+                stage_orm.cached = cached
+                has_changes = True
+            if stage_orm.token_count != token_count:
+                stage_orm.token_count = token_count
+                has_changes = True
+            if stage_orm.error_message != error_message:
+                stage_orm.error_message = error_message
+                has_changes = True
             if stage_orm.started_at is None:
                 stage_orm.started_at = now
+                has_changes = True
             if (
                 status_val in ("completed", "failed", "cached", "skipped")
                 and stage_orm.completed_at is None
             ):
                 stage_orm.completed_at = now
+                has_changes = True
+
+        return has_changes
 
     async def _execute_pipeline_run(
         self, run_id: uuid.UUID, initial_state: PipelineState
@@ -149,7 +173,7 @@ class PipelineService:
                     cached_stages = set(last_state.get("cached_stages", set()))
                     errors = list(last_state.get("errors", []))
 
-                    await self._persist_stage_deltas(
+                    has_changes = await self._persist_stage_deltas(
                         session=session,
                         run_id=run_id,
                         stage_statuses=stage_statuses,
@@ -158,7 +182,8 @@ class PipelineService:
                         errors=errors,
                     )
 
-                    await session.commit()
+                    if has_changes:
+                        await session.commit()
 
             async with get_db_context() as session:
                 run_orm = await session.get(

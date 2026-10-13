@@ -1,5 +1,9 @@
 # Bolt's Performance Journal
 
+## 2025-05-24 - Delta Change Tracking for Streaming Pipeline Database Commits
+**Learning:** Calling `session.commit()` unconditionally on every yield of a LangGraph `astream` loop dirty-checked and issued SQL update transactions even when streaming ticks contained no changes to ORM stage statuses or token counts. Comparing incoming values against current ORM field values and tracking delta changes (`has_changes`) avoids unnecessary database `COMMIT` queries on duplicate stream ticks.
+**Action:** When persisting ORM state inside frequent streaming event loops, compare incoming fields against existing instance state and only invoke `session.commit()` when an actual delta occurred.
+
 ## 2025-05-23 - Subquery Permission Filter Pushdown in Vector Similarity Search
 **Learning:** Performing vector distance calculations (`func.min(EmbeddingORM.embedding.cosine_distance(query_vec))`) and `GROUP BY EmbeddingORM.paper_id` in an unfiltered subquery computed cosine similarity across ALL stored embeddings in the database before joining and filtering by paper permissions in the outer query. Pushing paper permission filters (`PaperORM.user_id` / `is_public`) into the `distance_subq` restricts vector distance math and aggregation ONLY to embeddings of accessible papers, avoiding unnecessary vector math across the entire table.
 **Action:** Always push entity ownership and visibility filters directly into vector search subqueries so pgvector distance math and aggregations only operate on accessible rows.
