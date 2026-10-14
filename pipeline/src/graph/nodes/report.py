@@ -53,23 +53,19 @@ log = get_logger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def _get_summary(summaries: list[SummaryOutput], level: SummaryLevel) -> str:
+def _get_summary(summary_map: dict[SummaryLevel, str], level: SummaryLevel) -> str:
     """Return summary content for the requested level, or a placeholder."""
-    for s in summaries:
-        if s.level == level:
-            return s.content
-    return "_Summary not available._"
+    return summary_map.get(level, "_Summary not available._")
 
 
 def _get_diagram_svg_ref(
-    diagrams: list[DiagramOutput], diagram_type: DiagramType
+    diagram_map: dict[DiagramType, str], diagram_type: DiagramType
 ) -> str:
     """Return an embedded SVG reference or a Mermaid DSL code block."""
-    for d in diagrams:
-        if d.diagram_type == diagram_type:
-            # Always return a fenced Mermaid block instead of relying on public SVGs
-            # which may have private bucket access issues or styling mismatches.
-            return f"```mermaid\n{d.dsl_code}\n```"
+    if diagram_type in diagram_map:
+        # Always return a fenced Mermaid block instead of relying on public SVGs
+        # which may have private bucket access issues or styling mismatches.
+        return f"```mermaid\n{diagram_map[diagram_type]}\n```"
     return "_Diagram not generated._"
 
 
@@ -82,6 +78,11 @@ def _build_markdown(
     run_id: str,
 ) -> str:
     """Assemble the full structured Markdown report."""
+
+    # Bolt Optimization: Construct O(1) dict maps for summary and diagram lookups
+    # to avoid repeated linear array iteration during Markdown assembly.
+    summary_map = {s.level: s.content for s in summaries}
+    diagram_map = {d.diagram_type: d.dsl_code for d in diagrams}
 
     title = paper_metadata.title if paper_metadata else "Untitled Paper"
     authors = (
@@ -184,7 +185,7 @@ def _build_markdown(
 
 ## 🔍 One-Paragraph Summary
 
-{_get_summary(summaries, SummaryLevel.PARAGRAPH)}
+{_get_summary(summary_map, SummaryLevel.PARAGRAPH)}
 
 ---
 
@@ -196,25 +197,25 @@ def _build_markdown(
 
 ## 🏗️ Architecture Diagram
 
-{_get_diagram_svg_ref(diagrams, DiagramType.ARCHITECTURE)}
+{_get_diagram_svg_ref(diagram_map, DiagramType.ARCHITECTURE)}
 
 ---
 
 ## 🔄 Training Flow
 
-{_get_diagram_svg_ref(diagrams, DiagramType.TRAINING_FLOW)}
+{_get_diagram_svg_ref(diagram_map, DiagramType.TRAINING_FLOW)}
 
 ---
 
 ## ⚡ Inference Flow
 
-{_get_diagram_svg_ref(diagrams, DiagramType.INFERENCE_FLOW)}
+{_get_diagram_svg_ref(diagram_map, DiagramType.INFERENCE_FLOW)}
 
 ---
 
 ## 📑 Section-by-Section Summary
 
-{_get_summary(summaries, SummaryLevel.SECTION_BY_SECTION)}
+{_get_summary(summary_map, SummaryLevel.SECTION_BY_SECTION)}
 
 ---
 
@@ -240,13 +241,13 @@ def _build_markdown(
 
 ## 🧒 ELI5 Summary
 
-{_get_summary(summaries, SummaryLevel.ELI5)}
+{_get_summary(summary_map, SummaryLevel.ELI5)}
 
 ---
 
 ## 📋 Bullet Summary
 
-{_get_summary(summaries, SummaryLevel.BULLETS)}
+{_get_summary(summary_map, SummaryLevel.BULLETS)}
 
 ---
 
