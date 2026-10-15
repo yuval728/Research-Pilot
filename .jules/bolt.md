@@ -1,5 +1,9 @@
 # Bolt's Performance Journal
 
+## 2025-05-24 - Non-blocking Async Fetching for Heavy Secondary Page Assets
+**Learning:** Awaiting heavy secondary asset downloads (e.g. `papersApi.getReportMarkdown(id)`) inside synchronous page initialization routines blocks `setIsLoading(false)`, holding up the initial UI render by an extra network round-trip (~150-800ms) even when the user lands on a tab that doesn't display that asset. Initiating secondary asset downloads asynchronously in the background allows the core UI (metadata, status timeline, default tab contents) to render immediately while secondary content loads seamlessly in background.
+**Action:** Unblock page loading state (`setIsLoading(false)`) as soon as primary layout data resolves, and load tab-specific or secondary assets asynchronously without blocking initial render.
+
 ## 2025-05-23 - Subquery Permission Filter Pushdown in Vector Similarity Search
 **Learning:** Performing vector distance calculations (`func.min(EmbeddingORM.embedding.cosine_distance(query_vec))`) and `GROUP BY EmbeddingORM.paper_id` in an unfiltered subquery computed cosine similarity across ALL stored embeddings in the database before joining and filtering by paper permissions in the outer query. Pushing paper permission filters (`PaperORM.user_id` / `is_public`) into the `distance_subq` restricts vector distance math and aggregation ONLY to embeddings of accessible papers, avoiding unnecessary vector math across the entire table.
 **Action:** Always push entity ownership and visibility filters directly into vector search subqueries so pgvector distance math and aggregations only operate on accessible rows.
