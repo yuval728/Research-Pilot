@@ -15,6 +15,7 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
 
 from src.api.dependencies import CurrentUserDep, PipelineServiceDep
+from src.models.batch import BatchJobResponse, BatchProcessRequest
 from src.models.run import PipelineRun, StageResult
 
 router = APIRouter(prefix="/pipeline", tags=["pipeline"])
@@ -174,3 +175,116 @@ async def stream_run_status(
             pass
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@router.post(
+    "/batch",
+    response_model=BatchJobResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Trigger a batch pipeline run for multiple papers",
+    description=(
+        "Enqueues background pipeline executions for a list of paper IDs. "
+        "Concurrency is controlled (max 2-3 parallel). Returns the BatchJobResponse "
+        "(in PENDING or PROCESSING state) immediately — stream or poll "
+        "GET /pipeline/batch/{batch_id} to track progress."
+    ),
+)
+async def trigger_batch_run(
+    body: BatchProcessRequest,
+    pipeline_service: PipelineServiceDep,
+    _user: CurrentUserDep,
+) -> BatchJobResponse:
+    """Start batch pipeline execution for a list of paper IDs."""
+    try:
+        return await pipeline_service.trigger_batch_run(
+            body.paper_ids, user_id=_user
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+
+
+@router.get(
+    "/batch/{batch_id}",
+    response_model=BatchJobResponse,
+    summary="Get batch job status",
+    description="Returns the full BatchJob record including all item statuses.",
+)
+async def get_batch_status(
+    batch_id: uuid.UUID,
+    pipeline_service: PipelineServiceDep,
+    _user: CurrentUserDep,
+) -> BatchJobResponse:
+    """Fetch status and progress for a batch job."""
+    try:
+        return await pipeline_service.get_batch_status(batch_id, user_id=_user)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
+
+
+@router.get(
+    "/batch/{batch_id}/stream",
+    summary="Stream batch progress updates (SSE)",
+    description="Server-sent events stream emitting progress updates for the given batch_id.",
+)
+async def stream_batch_status(
+    batch_id: uuid.UUID,
+    pipeline_service: PipelineServiceDep,
+    _user: CurrentUserDep,
+) -> StreamingResponse:
+    async def batch_event_generator() -> AsyncIterator[str]:
+        last_payload: dict | None = None
+        error_count = 0
+        max_errors = 10
+        base_delay = 1.0
+        try:
+            while True:
+                try:
+                    batch = await pipeline_service.get_batch_status(
+                        batch_id, user_id=_user
+                    )
+                    error_count = 0
+                    payload = {
+                        "id": str(batch.id),
+                        "user_id": str(batch.user_id) if batch.user_id else None,
+                        "status": batch.status.value,
+                        "total_papers": batch.total_papers,
+                        "completed_papers": batch.completed_papers,
+                        "failed_papers": batch.failed_papers,
+                        "items": [
+                            {
+                                "id": str(item.id),
+                                "batch_id": str(item.batch_id),
+                                "paper_id": str(item.paper_id),
+                                "run_id": str(item.run_id) if item.run_id else None,
+                                "status": item.status.value,
+                                "error": item.error,
+                                "created_at": item.created_at.isoformat(),
+                                "updated_at": item.updated_at.isoformat(),
+                            }
+                            for item in batch.items
+                        ],
+                        "created_at": batch.created_at.isoformat(),
+                        "updated_at": batch.updated_at.isoformat(),
+                    }
+                    if payload != last_payload:
+                        last_payload = payload
+                        yield f"data: {json.dumps(payload)}\n\n"
+                    if batch.status.value in ("completed", "failed", "partial"):
+                        break
+
+                    await asyncio.sleep(1)
+                except Exception:
+                    error_count += 1
+                    if error_count >= max_errors:
+                        yield f"data: {json.dumps({'error': 'Stream failed after repeated errors'})}\n\n"
+                        break
+                    delay = base_delay * (2 ** (error_count - 1))
+                    await asyncio.sleep(delay)
+        finally:
+            pass
+
+    return StreamingResponse(batch_event_generator(), media_type="text/event-stream")
