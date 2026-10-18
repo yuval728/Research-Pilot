@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Check, ChevronRight, Code2, FileText, GitBranch, Globe, Lock, Upload } from 'lucide-react';
 import { Paper, PipelineRun } from '@/types';
@@ -237,7 +237,7 @@ export function PaperCard({
       </CardFooter>
     </Card>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Sub-components

@@ -201,7 +201,7 @@ export default function LibraryPage() {
     setPaperItems((prev) =>
       prev.map((item) => (item.paper.id === updated.id ? { ...item, paper: updated } : item)),
     );
-  };
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen">

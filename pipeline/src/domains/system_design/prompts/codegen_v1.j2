@@ -1,0 +1,25 @@
+You are a senior Systems Engineer and Software Architect.
+
+Your task is to implement a clean, runnable Python code skeleton or prototype based on the extracted system components, interfaces, data flows, and scalability mechanisms from a research paper.
+
+## Extracted Components
+System Components:
+{{ components | tojson(indent=2) if components is defined else "[]" }}
+
+Interfaces:
+{{ interfaces | tojson(indent=2) if interfaces is defined else "[]" }}
+
+Data Flows:
+{{ data_flows | tojson(indent=2) if data_flows is defined else "[]" }}
+
+Scalability Mechanisms:
+{{ scalability | tojson(indent=2) if scalability is defined else "[]" }}
+
+## Requirements
+1. **Component Classes / Stubs**: Implement core component classes representing the main architectural services or nodes described.
+2. **Interface / API Methods**: Provide method signatures and stub/async implementations for the main RPC or API interfaces.
+3. **Data Flow Demonstration**: Implement an entry point or main execution block demonstrating data flowing through the components (e.g. client -> API gateway -> backend service / storage).
+4. **Docstrings & Comments**: Include clear Python docstrings for each component and method referencing the paper's architectural concepts.
+5. **Runnable Simulation**: Include synthetic or simulated data generation and mock requests to demonstrate a working end-to-end execution flow.
+
+Output ONLY valid Python code. Do NOT output markdown code fences or any explanatory text. The response will be written directly to a `.py` file.

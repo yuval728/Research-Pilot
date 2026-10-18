@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { DiagramOutput } from '@/types';
+import { ensureMermaidInitialized } from '@/lib/mermaid';
 
 const TYPE_LABELS: Record<string, string> = {
   architecture: 'Architecture',
@@ -30,22 +31,7 @@ export function DiagramViewer({ diagrams }: DiagramViewerProps) {
   const activeDiagram = diagrams.find((d) => d.diagram_type === activeType) ?? diagrams[0];
 
   useEffect(() => {
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: 'base',
-      securityLevel: 'loose',
-      fontFamily: 'Inter',
-      themeVariables: {
-        darkMode: false,
-        background: '#fcfcfb',
-        primaryColor: '#f7f5f2',
-        primaryTextColor: '#1f1f1f',
-        primaryBorderColor: '#ddd8d2',
-        lineColor: '#8a867f',
-        secondaryColor: '#f1efec',
-        tertiaryColor: '#f6f4f1',
-      },
-    });
+    ensureMermaidInitialized();
   }, []);
 
   useEffect(() => {

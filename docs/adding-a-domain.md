@@ -1,10 +1,17 @@
-﻿# Adding A Domain
+# Adding A Domain
 
 Domain plugins let Research Pilot support new paper families without changing the core graph.
 
+## Built-In Domains
+
+Research Pilot includes built-in domain plugins under `pipeline/src/domains/`:
+
+- `ai_ml`: AI/ML research papers (models, tasks, datasets, loss functions, metrics).
+- `system_design`: System Design research papers (components, interfaces, data flows, scalability, trade-offs).
+
 ## Folder Layout
 
-Create a folder under `pipeline/src/domains/`:
+To add a new domain, create a folder under `pipeline/src/domains/<domain_id>/`:
 
 ```text
 pipeline/src/domains/system_design/
@@ -21,18 +28,30 @@ pipeline/src/domains/system_design/
 
 ## Plugin
 
-`plugin.py` should create a `DomainPlugin` and register it with `pipeline/src/domains/registry.py`. Use `pipeline/src/domains/ai_ml/plugin.py` as the reference implementation.
+`plugin.py` should subclass `DomainPlugin` and register itself with `pipeline/src/domains/registry.py`:
+
+```python
+from src.domains.base import DomainPlugin
+from src.domains.registry import registry
+
+class SystemDesignPlugin(DomainPlugin):
+    domain_id = "system_design"
+    ...
+
+registry.register(SystemDesignPlugin())
+```
+
+Use `pipeline/src/domains/ai_ml/plugin.py` or `pipeline/src/domains/system_design/plugin.py` as reference implementations.
 
 ## Schemas
 
 Keep schemas narrow and reviewable. A good domain schema should capture:
 
-- The core problem.
-- The method or system design.
-- Inputs and outputs.
-- Evaluation setup.
-- Claims and limitations.
-- Implementation notes when applicable.
+- The core problem statement.
+- The proposed method or system design architecture.
+- Components, interfaces, and data flows.
+- Scalability mechanisms and trade-offs.
+- Evaluation setup, limitations, and future work.
 
 ## Prompts
 
@@ -45,17 +64,17 @@ Prompts should ask for structured evidence, not just conclusions. Include instru
 
 ## Tests
 
-Add tests for:
+Add tests (e.g. in `pipeline/tests/unit/test_domain_<domain_id>.py`) for:
 
-- Plugin discovery.
+- Plugin discovery (`registry.auto_discover()`).
 - Schema validation.
-- Prompt rendering.
-- One representative extraction fixture when feasible.
+- Prompt template loading and rendering.
+- Representative extraction fixtures.
 
 ## Acceptance Checklist
 
-- The domain auto-discovers at API startup.
+- The domain auto-discovers at API startup (`DomainRegistry.auto_discover()`).
 - Classification can route a matching paper to the new domain.
-- Extraction returns typed data.
+- Extraction returns typed data matching the domain's extraction model.
 - Downstream summary, diagram, and report stages can consume the domain output.
 - Documentation includes any domain-specific setup.

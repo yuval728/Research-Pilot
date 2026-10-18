@@ -1,32 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import mermaid from 'mermaid';
 import { Card } from '@/components/ui/card';
+import { ensureMermaidInitialized } from '@/lib/mermaid';
 
 interface MarkdownDiagramProps {
   code: string;
 }
 
-export function MarkdownDiagram({ code }: MarkdownDiagramProps) {
+// Performance Optimization:
+// Memoize MarkdownDiagram to prevent unnecessary re-rendering and SVG re-parsing
+// when parent markdown view updates unless the diagram DSL `code` changes.
+export const MarkdownDiagram = memo(function MarkdownDiagram({ code }: MarkdownDiagramProps) {
   const [svg, setSvg] = useState<string>('');
   const [renderError, setRenderError] = useState<string | null>(null);
 
   useEffect(() => {
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: 'base',
-      securityLevel: 'loose',
-      fontFamily: 'Inter',
-      themeVariables: {
-        darkMode: false,
-        background: '#fcfcfb',
-        primaryColor: '#f7f5f2',
-        primaryTextColor: '#1f1f1f',
-        primaryBorderColor: '#ddd8d2',
-        lineColor: '#8a867f',
-        secondaryColor: '#f1efec',
-        tertiaryColor: '#f6f4f1',
-      },
-    });
+    ensureMermaidInitialized();
   }, []);
 
   useEffect(() => {
@@ -64,4 +53,4 @@ export function MarkdownDiagram({ code }: MarkdownDiagramProps) {
       )}
     </Card>
   );
-}
+});
