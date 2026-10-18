@@ -22,10 +22,9 @@ interface PaperCardProps {
 
 type DisplayStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 
-// Bolt Performance Optimization:
-// Memoize PaperCard to prevent unnecessary re-rendering of all paper cards in library and explore
-// views when parent component state (e.g. search query, active domain filter, sort option, or polling)
-// updates unless the paper, pipelineRun, or callback props actually change.
+// Performance Optimization:
+// Memoize PaperCard to prevent unnecessary re-renders of cards in grid/list views
+// when parent component state updates (such as typing in search, toggling filters, or sorting).
 export const PaperCard = memo(function PaperCard({ paper, pipelineRun, onPublish, onImport }: PaperCardProps) {
   const navigate = useNavigate();
   const status = toDisplayStatus(pipelineRun);

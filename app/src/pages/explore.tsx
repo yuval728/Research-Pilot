@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BookOpen, Filter, Globe, Layers3 } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { PaperCard } from '@/components/library/paper-card';
@@ -36,9 +36,9 @@ export default function ExplorePage() {
     fetchPublicPapers();
   }, []);
 
-  const handleSearch = (query: string) => {
+  const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
-  };
+  }, []);
 
   const allPapers = papers.filter((p) => p.metadata);
 
