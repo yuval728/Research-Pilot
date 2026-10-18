@@ -1,5 +1,9 @@
 # Bolt's Performance Journal
 
+## 2025-05-24 - Route-level Code Splitting for SPA Entry Chunk Optimization
+**Learning:** Statically importing all page routes in React Router top-level `App.tsx` bundled heavy page-specific dependencies (such as CodeMirror, Mermaid, and React Markdown in `PaperViewerPage`) into the main entry JS bundle (`index.js`), driving initial bundle size to 2,235.98 kB (652.44 kB gzipped). Converting static route page imports to `React.lazy()` dynamic imports with a `<Suspense>` fallback allowed Vite to split page routes into separate chunks, reducing initial entry bundle size by ~75% down to 552.70 kB (163.11 kB gzipped) for significantly faster initial load times.
+**Action:** Always use `React.lazy()` and `<Suspense>` for top-level route components in SPA applications so heavy page-specific dependencies are automatically code-split into dynamic chunks loaded on-demand.
+
 ## 2025-05-23 - Subquery Permission Filter Pushdown in Vector Similarity Search
 **Learning:** Performing vector distance calculations (`func.min(EmbeddingORM.embedding.cosine_distance(query_vec))`) and `GROUP BY EmbeddingORM.paper_id` in an unfiltered subquery computed cosine similarity across ALL stored embeddings in the database before joining and filtering by paper permissions in the outer query. Pushing paper permission filters (`PaperORM.user_id` / `is_public`) into the `distance_subq` restricts vector distance math and aggregation ONLY to embeddings of accessible papers, avoiding unnecessary vector math across the entire table.
 **Action:** Always push entity ownership and visibility filters directly into vector search subqueries so pgvector distance math and aggregations only operate on accessible rows.
