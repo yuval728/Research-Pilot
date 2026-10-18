@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { useState, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, Code2, FileText, GitBranch, Globe, Lock, Upload } from 'lucide-react';
 import { Paper, PipelineRun } from '@/types';
@@ -22,10 +22,9 @@ interface PaperCardProps {
 
 type DisplayStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 
-/**
- * Bolt Optimization: Memoized PaperCard component to prevent unnecessary re-renders
- * of card items when sibling cards update or when parent search/filter state changes.
- */
+// Performance Optimization:
+// Memoize PaperCard to prevent unnecessary re-renders of cards in grid/list views
+// when parent component state updates (such as typing in search, toggling filters, or sorting).
 export const PaperCard = memo(function PaperCard({ paper, pipelineRun, onPublish, onImport }: PaperCardProps) {
   const navigate = useNavigate();
   const status = toDisplayStatus(pipelineRun);

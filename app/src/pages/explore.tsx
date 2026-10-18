@@ -36,9 +36,9 @@ export default function ExplorePage() {
     fetchPublicPapers();
   }, []);
 
-  const handleSearch = (query: string) => {
+  const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
-  };
+  }, []);
 
   const allPapers = papers.filter((p) => p.metadata);
 
@@ -112,8 +112,6 @@ export default function ExplorePage() {
     [paperItems],
   );
 
-  // Bolt Optimization: Stabilize callback with useCallback so React.memo on PaperCard
-  // can effectively skip re-renders when parent component updates.
   const handleImport = useCallback((_paperId: string) => {
     toast.success('Imported to your library');
   }, []);
