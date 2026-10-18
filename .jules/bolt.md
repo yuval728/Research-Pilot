@@ -1,5 +1,8 @@
 # Bolt's Performance Journal
 
+## 2025-05-24 - Delta Change Tracking for Streaming Pipeline Database Commits
+**Learning:** Calling `session.commit()` unconditionally on every yield of a LangGraph `astream` loop dirty-checked and issued SQL update transactions even when streaming ticks contained no changes to ORM stage statuses or token counts. Comparing incoming values against current ORM field values and tracking delta changes (`has_changes`) avoids unnecessary database `COMMIT` queries on duplicate stream ticks.
+**Action:** When persisting ORM state inside frequent streaming event loops, compare incoming fields against existing instance state and only invoke `session.commit()` when an actual delta occurred.
 ## 2025-05-24 - Direct Stored Vector Similarity for Similar Paper Search
 **Learning:** Finding papers similar to an existing paper by generating a synthetic text query and calling an external LLM embedding API (`aembedding`) incurred ~500-1500ms network round-trip latency and API costs, despite the paper already having stored vectors in PostgreSQL. Querying `EmbeddingORM` stored vectors directly and computing minimum cosine distance (`func.min(func.least(...))`) via pgvector reduces response times to ~10ms (~50x speedup) with 0 external API calls.
 **Action:** When searching for similar entities that already have precomputed embeddings stored in pgvector, query stored vectors directly in SQL rather than re-embedding synthetic text summaries via external LLM APIs.
