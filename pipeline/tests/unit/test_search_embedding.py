@@ -33,6 +33,47 @@ async def test_search_papers_requests_fixed_embedding_dimension() -> None:
 
 
 @pytest.mark.asyncio
+async def test_find_similar_papers_uses_stored_embeddings_without_llm_call() -> None:
+    from datetime import UTC, datetime
+
+    db = AsyncMock()
+    paper_id = uuid.uuid4()
+
+    mock_paper_orm = MagicMock()
+    mock_paper_orm.id = paper_id
+    mock_paper_orm.source = "arxiv_url"
+    mock_paper_orm.source_url = "https://arxiv.org/abs/1234.56789"
+    mock_paper_orm.pdf_storage_path = "mock/path.pdf"
+    mock_paper_orm.metadata_ = {"title": "Test Paper", "abstract": "Test abstract"}
+    mock_paper_orm.user_id = None
+    mock_paper_orm.is_public = True
+    mock_paper_orm.published_at = None
+    mock_paper_orm.created_at = datetime.now(UTC)
+    mock_paper_orm.updated_at = datetime.now(UTC)
+    mock_paper_orm.imported_from_paper_id = None
+
+    paper_res = MagicMock()
+    paper_res.scalars.return_value.first.return_value = mock_paper_orm
+
+    src_emb_res = MagicMock()
+    src_emb_res.scalars.return_value.all.return_value = [[0.1] * 1536]
+
+    search_res = MagicMock()
+    search_res.scalars.return_value.all.return_value = []
+
+    db.execute = AsyncMock(side_effect=[paper_res, src_emb_res, search_res])
+
+    svc = PaperService(db)
+
+    with patch(
+        "src.services.paper_service.aembedding", new_callable=AsyncMock
+    ) as mock_embed:
+        results = await svc.find_similar_papers(paper_id, limit=3)
+        assert results == []
+        mock_embed.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_search_papers_raises_embedding_error_on_dimension_mismatch() -> None:
     db = AsyncMock()
     svc = PaperService(db)
