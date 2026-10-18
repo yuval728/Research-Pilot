@@ -125,7 +125,10 @@ def test_system_design_extraction_full():
                 name="Zone Master",
                 type="master",
                 description="Allocates data to zone location proxies.",
-                responsibilities=["Data location tracking", "Load balancing across zones"],
+                responsibilities=[
+                    "Data location tracking",
+                    "Load balancing across zones",
+                ],
                 technology="C++",
             ),
             SystemComponent(
