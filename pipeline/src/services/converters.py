@@ -12,7 +12,13 @@ from __future__ import annotations
 import json
 from datetime import UTC
 
-from src.db.models import BatchJobItemORM, BatchJobORM, OutputORM, PipelineRunORM, StageResultORM
+from src.db.models import (
+    BatchJobItemORM,
+    BatchJobORM,
+    OutputORM,
+    PipelineRunORM,
+    StageResultORM,
+)
 from src.models.batch import (
     BatchItemStatus,
     BatchJobItemResponse,

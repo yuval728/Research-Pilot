@@ -7,7 +7,12 @@ from unittest.mock import AsyncMock, patch
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from src.models.batch import BatchItemStatus, BatchJobItemResponse, BatchJobResponse, BatchJobStatus
+from src.models.batch import (
+    BatchItemStatus,
+    BatchJobItemResponse,
+    BatchJobResponse,
+    BatchJobStatus,
+)
 
 
 def test_trigger_batch_run_endpoint(test_client: TestClient):
