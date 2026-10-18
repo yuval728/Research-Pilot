@@ -196,7 +196,8 @@ export default function LibraryPage() {
     }
   };
 
-  const handlePublish = (updated: Paper) => {
+  // Bolt Optimization: Callback identity stability for PaperCard onPublish prop
+  const handlePublish = useCallback((updated: Paper) => {
     setPapers((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
     setPaperItems((prev) =>
       prev.map((item) => (item.paper.id === updated.id ? { ...item, paper: updated } : item)),

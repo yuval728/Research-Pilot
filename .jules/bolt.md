@@ -1,5 +1,9 @@
 # Bolt's Performance Journal
 
+## 2025-05-25 - React.memo Component Memoization for Library Card Grid Rendering
+**Learning:** In list views with frequent state updates (such as selection mode toggles or search query typing), unmemoized item components re-render all card instances in the grid on every state change (~N re-renders). Wrapping `PaperCard` with `React.memo` and ensuring all passed callback handlers (`handlePublish`, `handleSelectToggle`) maintain stable references via `useCallback` skips re-rendering unselected cards, reducing grid re-renders by ~N-1 per user interaction.
+**Action:** Always wrap card/list item components in `React.memo` and memoize parent callbacks passed to them with `useCallback` when rendering items in large interactive grid views.
+
 ## 2025-05-24 - Delta Change Tracking for Streaming Pipeline Database Commits
 **Learning:** Calling `session.commit()` unconditionally on every yield of a LangGraph `astream` loop dirty-checked and issued SQL update transactions even when streaming ticks contained no changes to ORM stage statuses or token counts. Comparing incoming values against current ORM field values and tracking delta changes (`has_changes`) avoids unnecessary database `COMMIT` queries on duplicate stream ticks.
 **Action:** When persisting ORM state inside frequent streaming event loops, compare incoming fields against existing instance state and only invoke `session.commit()` when an actual delta occurred.

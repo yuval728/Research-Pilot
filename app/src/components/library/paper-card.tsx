@@ -25,7 +25,10 @@ interface PaperCardProps {
 
 type DisplayStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 
-export function PaperCard({
+// Bolt Performance Optimization:
+// Memoize PaperCard to prevent re-rendering every card in the library grid
+// when parent LibraryPage state changes (e.g. selection mode toggle or search input).
+export const PaperCard = memo(function PaperCard({
   paper,
   pipelineRun,
   onPublish,
