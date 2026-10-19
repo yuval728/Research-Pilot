@@ -25,7 +25,10 @@ interface PaperCardProps {
 
 type DisplayStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 
-export function PaperCard({
+// Bolt Optimization: Memoize PaperCard component to avoid unnecessary re-renders
+// of every paper card in the library list when toggling selection state, typing
+// in search inputs, or changing filter/sort options.
+export const PaperCard = memo(function PaperCard({
   paper,
   pipelineRun,
   onPublish,
