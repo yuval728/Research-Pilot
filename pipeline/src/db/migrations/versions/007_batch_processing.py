@@ -22,7 +22,9 @@ def upgrade() -> None:
         "batch_jobs",
         sa.Column("id", sa.Uuid(as_uuid=True), primary_key=True),
         sa.Column("user_id", sa.Uuid(as_uuid=True), nullable=True, index=True),
-        sa.Column("status", sa.String(length=50), nullable=False, server_default="pending"),
+        sa.Column(
+            "status", sa.String(length=50), nullable=False, server_default="pending"
+        ),
         sa.Column("total_papers", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("completed_papers", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("failed_papers", sa.Integer(), nullable=False, server_default="0"),
@@ -53,7 +55,9 @@ def upgrade() -> None:
             sa.ForeignKey("pipeline_runs.id", ondelete="SET NULL"),
             nullable=True,
         ),
-        sa.Column("status", sa.String(length=50), nullable=False, server_default="pending"),
+        sa.Column(
+            "status", sa.String(length=50), nullable=False, server_default="pending"
+        ),
         sa.Column("error", sa.String(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),

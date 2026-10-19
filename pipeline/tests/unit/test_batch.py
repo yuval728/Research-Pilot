@@ -129,13 +129,15 @@ async def test_execute_batch_job_partial_failure():
 
     # Mock get_db_context for background tasks
     mock_session = AsyncMock()
-    mock_session.get = AsyncMock(side_effect=lambda model, ident, options=None: {
-        (BatchJobORM, batch_id): batch_orm,
-        (BatchJobItemORM, item1_id): item1,
-        (BatchJobItemORM, item2_id): item2,
-        (PaperORM, paper1_id): paper1_orm,
-        (PaperORM, paper2_id): None,  # paper2 not found -> item2 fails
-    }.get((model, ident)))
+    mock_session.get = AsyncMock(
+        side_effect=lambda model, ident, options=None: {
+            (BatchJobORM, batch_id): batch_orm,
+            (BatchJobItemORM, item1_id): item1,
+            (BatchJobItemORM, item2_id): item2,
+            (PaperORM, paper1_id): paper1_orm,
+            (PaperORM, paper2_id): None,  # paper2 not found -> item2 fails
+        }.get((model, ident))
+    )
     mock_session.commit = AsyncMock()
 
     mock_db_context = MagicMock()
@@ -146,13 +148,17 @@ async def test_execute_batch_job_partial_failure():
     svc = PipelineService(db)
 
     with (
-        patch("src.services.pipeline_service.get_db_context", return_value=mock_db_context),
+        patch(
+            "src.services.pipeline_service.get_db_context", return_value=mock_db_context
+        ),
         patch.object(svc, "_execute_pipeline_run", new_callable=AsyncMock) as mock_exec,
     ):
         mock_exec.return_value = None
+
         # Mock run_orm status on re-fetch
         async def mock_get_run(model, ident, options=None):
             from src.db.models import PipelineRunORM
+
             if model == BatchJobORM:
                 return batch_orm
             if model == BatchJobItemORM:
