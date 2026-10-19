@@ -430,16 +430,18 @@ class PipelineService:
 
                     async with get_db_context() as session:
                         item_orm = await session.get(BatchJobItemORM, item_id)
-                        run_orm = await session.get(PipelineRunORM, run_id)
-                        if item_orm and run_orm:
-                            if run_orm.status in (
+                        run_orm_finished = await session.get(PipelineRunORM, run_id)
+                        if item_orm and run_orm_finished:
+                            if run_orm_finished.status in (
                                 RunStatus.COMPLETED.value,
                                 RunStatus.PARTIAL.value,
                             ):
                                 item_orm.status = BatchItemStatus.COMPLETED.value
                             else:
                                 item_orm.status = BatchItemStatus.FAILED.value
-                                item_orm.error = run_orm.error or "Pipeline run failed"
+                                item_orm.error = (
+                                    run_orm_finished.error or "Pipeline run failed"
+                                )
                             item_orm.updated_at = datetime.now(UTC)
                             await session.commit()
 
