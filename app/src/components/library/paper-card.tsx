@@ -25,7 +25,7 @@ interface PaperCardProps {
 
 type DisplayStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 
-export function PaperCard({
+export const PaperCard = memo(function PaperCard({
   paper,
   pipelineRun,
   onPublish,
