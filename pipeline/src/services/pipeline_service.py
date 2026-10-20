@@ -14,7 +14,13 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.db.models import BatchJobItemORM, BatchJobORM, PaperORM, PipelineRunORM, StageResultORM
+from src.db.models import (
+    BatchJobItemORM,
+    BatchJobORM,
+    PaperORM,
+    PipelineRunORM,
+    StageResultORM,
+)
 from src.db.session import get_db_context
 from src.graph.pipeline import research_pipeline
 from src.graph.state import PipelineState, make_initial_state
