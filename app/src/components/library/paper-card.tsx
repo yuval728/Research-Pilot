@@ -25,6 +25,9 @@ interface PaperCardProps {
 
 type DisplayStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 
+// Performance Optimization:
+// Memoize PaperCard to prevent unnecessary re-rendering of paper items in library/explore
+// grid lists when parent state changes (e.g., search query updates or multi-select toggles).
 export const PaperCard = memo(function PaperCard({
   paper,
   pipelineRun,
