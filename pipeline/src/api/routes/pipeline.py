@@ -196,9 +196,7 @@ async def trigger_batch_run(
 ) -> BatchJobResponse:
     """Start batch pipeline execution for a list of paper IDs."""
     try:
-        return await pipeline_service.trigger_batch_run(
-            body.paper_ids, user_id=_user
-        )
+        return await pipeline_service.trigger_batch_run(body.paper_ids, user_id=_user)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)

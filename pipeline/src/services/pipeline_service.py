@@ -14,7 +14,13 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.db.models import BatchJobItemORM, BatchJobORM, PaperORM, PipelineRunORM, StageResultORM
+from src.db.models import (
+    BatchJobItemORM,
+    BatchJobORM,
+    PaperORM,
+    PipelineRunORM,
+    StageResultORM,
+)
 from src.db.session import get_db_context
 from src.graph.pipeline import research_pipeline
 from src.graph.state import PipelineState, make_initial_state
@@ -424,16 +430,18 @@ class PipelineService:
 
                     async with get_db_context() as session:
                         item_orm = await session.get(BatchJobItemORM, item_id)
-                        run_orm = await session.get(PipelineRunORM, run_id)
-                        if item_orm and run_orm:
-                            if run_orm.status in (
+                        latest_run_orm = await session.get(PipelineRunORM, run_id)
+                        if item_orm and latest_run_orm:
+                            if latest_run_orm.status in (
                                 RunStatus.COMPLETED.value,
                                 RunStatus.PARTIAL.value,
                             ):
                                 item_orm.status = BatchItemStatus.COMPLETED.value
                             else:
                                 item_orm.status = BatchItemStatus.FAILED.value
-                                item_orm.error = run_orm.error or "Pipeline run failed"
+                                item_orm.error = (
+                                    latest_run_orm.error or "Pipeline run failed"
+                                )
                             item_orm.updated_at = datetime.now(UTC)
                             await session.commit()
 
