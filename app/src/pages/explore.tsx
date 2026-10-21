@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BookOpen, Filter, Globe, Layers3 } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { PaperCard } from '@/components/library/paper-card';
@@ -36,9 +36,9 @@ export default function ExplorePage() {
     fetchPublicPapers();
   }, []);
 
-  const handleSearch = (query: string) => {
+  const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
-  };
+  }, []);
 
   const allPapers = papers.filter((p) => p.metadata);
 
@@ -112,9 +112,9 @@ export default function ExplorePage() {
     [paperItems],
   );
 
-  const handleImport = (_paperId: string) => {
+  const handleImport = useCallback((_paperId: string) => {
     toast.success('Imported to your library');
-  };
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen">

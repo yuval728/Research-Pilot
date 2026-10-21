@@ -1,4 +1,4 @@
-import { PipelineRun } from '@/types';
+import { BatchJob, PipelineRun } from '@/types';
 import { apiFetch } from './http';
 
 function ensureApi() {
@@ -15,6 +15,25 @@ export const pipelineApi = {
    */
   async triggerRun(paperId: string): Promise<PipelineRun> {
     return apiFetch(`/api/v1/pipeline/run/${paperId}`, { method: 'POST' });
+  },
+
+  /**
+   * Trigger a batch pipeline run for multiple papers.
+   * POST /api/v1/pipeline/batch
+   */
+  async triggerBatch(paperIds: string[]): Promise<BatchJob> {
+    return apiFetch('/api/v1/pipeline/batch', {
+      method: 'POST',
+      body: JSON.stringify({ paper_ids: paperIds }),
+    });
+  },
+
+  /**
+   * Get batch status.
+   * GET /api/v1/pipeline/batch/{batch_id}
+   */
+  async getBatchStatus(batchId: string): Promise<BatchJob> {
+    return apiFetch(`/api/v1/pipeline/batch/${batchId}`);
   },
 
   /**

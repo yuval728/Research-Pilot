@@ -75,3 +75,31 @@ def test_search_papers_embedding_error_returns_structured_payload(
     payload = response.json()
     assert payload["error"] == "EmbeddingError"
     assert payload["message"] == "Failed to generate a valid query embedding."
+
+
+def test_similar_papers(test_client: TestClient):
+    """Test GET /api/v1/search/similar/{paper_id}"""
+    paper_id = uuid.uuid4()
+    similar_id = uuid.uuid4()
+    mock_similar_paper = Paper(
+        id=similar_id,
+        source=PaperSource.ARXIV_URL,
+        source_url="https://arxiv.org/abs/1234.56789",  # type: ignore[arg-type]
+        pdf_storage_path="mock/path.pdf",
+        metadata=None,
+        user_id=None,
+        is_public=True,
+        published_at=None,
+        imported_from_paper_id=None,
+    )
+
+    with patch(
+        "src.services.paper_service.PaperService.find_similar_papers",
+        new_callable=AsyncMock,
+    ) as mock_find:
+        mock_find.return_value = [mock_similar_paper]
+        response = test_client.get(f"/api/v1/search/similar/{paper_id}")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.json()) == 1
+    assert response.json()[0]["id"] == str(similar_id)

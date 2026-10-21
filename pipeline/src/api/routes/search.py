@@ -94,34 +94,17 @@ async def similar_papers(
     limit: int = 5,
 ) -> list[Paper]:
     """Return papers most similar to *paper_id* using its stored embeddings."""
-    # Fetch the paper first to derive a search query from its title+abstract
     try:
-        paper = await paper_service.get_paper(paper_id, user_id=_user)
+        return await paper_service.find_similar_papers(
+            paper_id, limit=limit, user_id=_user
+        )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+            status_code=status.HTTP_404_NOT_FOUND
+            if "not found" in str(exc).lower()
+            else status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
         ) from exc
-
-    if not paper.metadata:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=(
-                "Paper has no metadata yet — run the pipeline first"
-                " to generate embeddings."
-            ),
-        )
-
-    # Build a synthetic query from the paper's own title and abstract
-    meta = paper.metadata
-    query_parts = [meta.title]
-    if meta.abstract:
-        query_parts.append(meta.abstract[:500])  # keep token budget sane
-    query = " ".join(query_parts)
-
-    try:
-        candidates = await paper_service.search_papers(
-            query, limit=limit + 1, user_id=_user
-        )
     except EmbeddingError:
         raise
     except Exception as exc:
@@ -132,6 +115,3 @@ async def similar_papers(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Similarity search failed due to an internal error.",
         ) from exc
-
-    # Exclude the source paper itself from results
-    return [p for p in candidates if p.id != paper_id][:limit]
