@@ -430,9 +430,9 @@ class PipelineService:
 
                     async with get_db_context() as session:
                         item_orm = await session.get(BatchJobItemORM, item_id)
-                        latest_run_orm = await session.get(PipelineRunORM, run_id)
-                        if item_orm and latest_run_orm:
-                            if latest_run_orm.status in (
+                        completed_run = await session.get(PipelineRunORM, run_id)
+                        if item_orm and completed_run:
+                            if completed_run.status in (
                                 RunStatus.COMPLETED.value,
                                 RunStatus.PARTIAL.value,
                             ):
