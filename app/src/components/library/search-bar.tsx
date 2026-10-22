@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, X, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,8 @@ interface SearchBarProps {
   isSearching?: boolean;
   placeholder?: string;
   helperText?: string;
+  /** Debounce delay in ms to avoid thrashing backend search and LLM embedding APIs */
+  debounceMs?: number;
 }
 
 export function SearchBar({
@@ -18,12 +20,41 @@ export function SearchBar({
   isSearching = false,
   placeholder = 'Search papers by concept, method, architecture...',
   helperText = 'Use natural language to find relevant papers in your library.',
+  debounceMs = 300,
 }: SearchBarProps) {
   const [query, setQuery] = useState('');
+  const isFirstRender = useRef(true);
+  const onSearchRef = useRef(onSearch);
+
+  useEffect(() => {
+    onSearchRef.current = onSearch;
+  }, [onSearch]);
+
+  // Performance Optimization:
+  // Debouncing onSearch avoids triggering an external LLM embedding API call
+  // (`aembedding`) and PostgreSQL pgvector distance calculation on every single
+  // keystroke as the user types. For a 10-character search, this reduces backend
+  // network requests and embedding API overhead by ~90%.
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    if (!query.trim()) {
+      onSearchRef.current('');
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      onSearchRef.current(query);
+    }, debounceMs);
+
+    return () => clearTimeout(timer);
+  }, [query, debounceMs]);
 
   const handleClear = () => {
     setQuery('');
-    onSearch('');
   };
 
   return (
@@ -37,10 +68,7 @@ export function SearchBar({
 
         <Input
           value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            onSearch(e.target.value);
-          }}
+          onChange={(e) => setQuery(e.target.value)}
           placeholder={placeholder}
           className="h-14 border-0 bg-transparent pl-11 pr-12 text-lg text-foreground placeholder:text-muted-foreground/80 focus-visible:ring-0"
         />

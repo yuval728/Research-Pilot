@@ -1,5 +1,9 @@
 # Bolt's Performance Journal
 
+## 2025-05-25 - Search Input Debouncing for Semantic Search API Calls
+**Learning:** Invoking search handlers on every keystroke in search inputs triggered backend API calls on every character entered. In semantic search flows, each backend request generated a 1536-dimensional vector embedding via an external LLM API (`aembedding`) and executed PostgreSQL pgvector cosine distance queries. Debouncing input changes by 300ms reduces external API calls and database vector queries by ~90% for typical search queries.
+**Action:** Always debounce input handlers in search components that trigger network requests, expensive API calls, or database queries.
+
 ## 2025-05-24 - React.memo Component Wrapping for Library Grid Re-renders
 **Learning:** Rendering complex card components (`PaperCard`) in library and explore grid views re-rendered every card on parent state updates (such as multi-select toggles, batch processing queue triggers, or search input updates). Wrapping `PaperCard` with `React.memo` and passing stable callback handlers (`useCallback`) prevents re-rendering un-modified paper cards, reducing re-render overhead by ~80-90% during library grid interactions.
 **Action:** Always wrap grid/list item components in `React.memo()` and ensure parent callbacks passed as props use `useCallback` to maintain reference stability across parent re-renders.
