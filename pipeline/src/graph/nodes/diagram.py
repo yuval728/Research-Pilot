@@ -448,9 +448,7 @@ async def diagram_node(state: PipelineState) -> dict[str, Any]:
         # Pre-render prompts sequentially
         # Bolt Optimization: Pre-serialize architecture_components once before loop
         # to avoid 3x redundant Pydantic model serialization during diagram prompt rendering.
-        arch_components = [
-            c.model_dump() for c in extraction.architecture_components
-        ]
+        arch_components = [c.model_dump() for c in extraction.architecture_components]
         prompts = [
             render_prompt(
                 _PROMPT_PATH,
