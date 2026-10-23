@@ -113,6 +113,8 @@ export function BatchProgressModal({
             variant="ghost"
             size="icon"
             onClick={onClose}
+            aria-label="Close modal"
+            title="Close"
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
           >
             <X className="w-4 h-4" />

@@ -133,6 +133,7 @@ export default function LoginPage() {
               <Input
                 type="email"
                 placeholder="name@example.com"
+                aria-label="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="bg-transparent border-[#1a1a1a] focus:ring-primary h-11"
@@ -143,6 +144,7 @@ export default function LoginPage() {
                 <Input
                   type="password"
                   placeholder="Password"
+                  aria-label="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="bg-transparent border-[#1a1a1a] focus:ring-primary h-11"
@@ -154,6 +156,7 @@ export default function LoginPage() {
                 <Input
                   type="password"
                   placeholder="Confirm password"
+                  aria-label="Confirm password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="bg-transparent border-[#1a1a1a] focus:ring-primary h-11"

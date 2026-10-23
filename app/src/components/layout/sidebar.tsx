@@ -121,6 +121,7 @@ export function Sidebar() {
             size="icon"
             className="h-8 w-8 text-muted-foreground hover:text-destructive"
             onClick={signOut}
+            aria-label="Sign out"
             title="Sign out"
           >
             <LogOut className="w-4 h-4" />
