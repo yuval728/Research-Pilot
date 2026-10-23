@@ -42,6 +42,7 @@ export function SearchBar({
             onSearch(e.target.value);
           }}
           placeholder={placeholder}
+          aria-label="Search papers"
           className="h-14 border-0 bg-transparent pl-11 pr-12 text-lg text-foreground placeholder:text-muted-foreground/80 focus-visible:ring-0"
         />
 

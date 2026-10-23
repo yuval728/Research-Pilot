@@ -159,6 +159,7 @@ export const PaperCard = memo(function PaperCard({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/70"
+                aria-label="View diagrams"
                 title="View diagrams"
                 onClick={() => navigate(`/papers/${paper.id}?tab=diagrams`)}
               >
@@ -168,6 +169,7 @@ export const PaperCard = memo(function PaperCard({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/70"
+                aria-label="View code"
                 title="View code"
                 onClick={() => navigate(`/papers/${paper.id}?tab=code`)}
               >
@@ -177,6 +179,7 @@ export const PaperCard = memo(function PaperCard({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/70"
+                aria-label="View report"
                 title="View report"
                 onClick={() => navigate(`/papers/${paper.id}?tab=report`)}
               >
