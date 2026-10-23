@@ -173,6 +173,29 @@ def test_get_paper_outputs_includes_extraction(test_client: TestClient):
     assert response.json()["extraction"]["task"] == "machine translation"
 
 
+def test_get_report_markdown_success(test_client: TestClient):
+    paper_id = uuid.uuid4()
+    with patch(
+        "src.services.export_service.ExportService.get_report_markdown",
+        new_callable=AsyncMock,
+    ) as mock_get:
+        mock_get.return_value = "# Report Title\nReport body"
+        response = test_client.get(f"/api/v1/papers/{paper_id}/outputs/report.md")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.text == "# Report Title\nReport body"
+
+
+def test_get_report_markdown_missing_returns_404(test_client: TestClient):
+    paper_id = uuid.uuid4()
+    with patch(
+        "src.services.export_service.ExportService.get_report_markdown",
+        new_callable=AsyncMock,
+    ) as mock_get:
+        mock_get.side_effect = ValueError("No report found for paper")
+        response = test_client.get(f"/api/v1/papers/{paper_id}/outputs/report.md")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
 def test_get_code_source_missing_returns_404(test_client: TestClient):
     paper_id = uuid.uuid4()
     with patch(
