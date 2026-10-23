@@ -1,5 +1,9 @@
 # Bolt's Performance Journal
 
+## 2025-05-24 - Module-Scoped CodeMirror Extension Instance Reference Stability
+**Learning:** Instantiating language extension arrays inline (`extensions={[python()]}`) in `@uiw/react-codemirror` passes a new extension array reference on every component re-render. This forces CodeMirror to tear down, re-initialize its editor view state, and re-parse syntax tokens on unrelated state updates. Extracting extension configurations to module-scoped constants (`const PYTHON_EXTENSIONS = [python()]`) maintains reference stability and prevents view state teardown.
+**Action:** Always extract CodeMirror extension arrays to top-level module constants or memoized values (`useMemo`) to preserve reference stability across component re-renders.
+
 ## 2025-05-24 - React.memo Component Wrapping for Library Grid Re-renders
 **Learning:** Rendering complex card components (`PaperCard`) in library and explore grid views re-rendered every card on parent state updates (such as multi-select toggles, batch processing queue triggers, or search input updates). Wrapping `PaperCard` with `React.memo` and passing stable callback handlers (`useCallback`) prevents re-rendering un-modified paper cards, reducing re-render overhead by ~80-90% during library grid interactions.
 **Action:** Always wrap grid/list item components in `React.memo()` and ensure parent callbacks passed as props use `useCallback` to maintain reference stability across parent re-renders.
