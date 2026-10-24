@@ -95,6 +95,7 @@ export function DiagramViewer({ diagrams }: DiagramViewerProps) {
           <Button
             variant="outline"
             size="icon"
+            aria-label="Zoom in"
             className="h-8 w-8 border-[#1a1a1a]"
             onClick={() => setZoom((z) => Math.min(z + 0.2, 3))}
           >
@@ -103,6 +104,7 @@ export function DiagramViewer({ diagrams }: DiagramViewerProps) {
           <Button
             variant="outline"
             size="icon"
+            aria-label="Zoom out"
             className="h-8 w-8 border-[#1a1a1a]"
             onClick={() => setZoom((z) => Math.max(z - 0.2, 0.3))}
           >
@@ -111,6 +113,7 @@ export function DiagramViewer({ diagrams }: DiagramViewerProps) {
           <Button
             variant="outline"
             size="icon"
+            aria-label="Reset zoom"
             className="h-8 w-8 border-[#1a1a1a]"
             onClick={() => setZoom(1)}
           >
