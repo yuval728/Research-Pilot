@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, X, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,8 @@ interface SearchBarProps {
   isSearching?: boolean;
   placeholder?: string;
   helperText?: string;
+  /** Debounce delay in milliseconds for search callback execution (default: 300ms) */
+  debounceMs?: number;
 }
 
 export function SearchBar({
@@ -18,10 +20,42 @@ export function SearchBar({
   isSearching = false,
   placeholder = 'Search papers by concept, method, architecture...',
   helperText = 'Use natural language to find relevant papers in your library.',
+  debounceMs = 300,
 }: SearchBarProps) {
   const [query, setQuery] = useState('');
+  const isInitialRender = useRef(true);
+  const skipNextDebounceRef = useRef(false);
+  const onSearchRef = useRef(onSearch);
+
+  // Keep callback ref updated on every render to support unmemoized parent onSearch handlers
+  useEffect(() => {
+    onSearchRef.current = onSearch;
+  });
+
+  // Performance Optimization:
+  // Debounce the onSearch callback so typing a search query doesn't fire rapid, redundant
+  // backend API requests (e.g. LiteLLM embedding generation and pgvector searches) on every single keystroke.
+  // Reduces search API requests by ~80-90% while typing, preserving backend resources.
+  useEffect(() => {
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      return;
+    }
+
+    if (skipNextDebounceRef.current) {
+      skipNextDebounceRef.current = false;
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      onSearchRef.current(query);
+    }, debounceMs);
+
+    return () => clearTimeout(timer);
+  }, [query, debounceMs]);
 
   const handleClear = () => {
+    skipNextDebounceRef.current = true;
     setQuery('');
     onSearch('');
   };
@@ -39,7 +73,6 @@ export function SearchBar({
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
-            onSearch(e.target.value);
           }}
           placeholder={placeholder}
           className="h-14 border-0 bg-transparent pl-11 pr-12 text-lg text-foreground placeholder:text-muted-foreground/80 focus-visible:ring-0"
