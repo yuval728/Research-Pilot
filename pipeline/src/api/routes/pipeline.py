@@ -15,9 +15,11 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
 
 from src.api.dependencies import CurrentUserDep, PipelineServiceDep
+from src.core.logger import get_logger
 from src.models.batch import BatchJobResponse, BatchProcessRequest
 from src.models.run import PipelineRun, StageResult
 
+logger = get_logger(__name__)
 router = APIRouter(prefix="/pipeline", tags=["pipeline"])
 
 
@@ -164,9 +166,12 @@ async def stream_run_status(
 
                     await asyncio.sleep(1)
                 except Exception as exc:
+                    logger.warning(
+                        "stream_run_status_error", run_id=str(run_id), error=str(exc)
+                    )
                     error_count += 1
                     if error_count >= max_errors:
-                        yield f"data: {json.dumps({'error': 'Stream failed after repeated errors', 'detail': str(exc)})}\n\n"
+                        yield f"data: {json.dumps({'error': 'Stream failed after repeated errors'})}\n\n"
                         break
                     # Exponential backoff: 1s, 2s, 4s, 8s...
                     delay = base_delay * (2 ** (error_count - 1))
@@ -275,7 +280,10 @@ async def stream_batch_status(
                         break
 
                     await asyncio.sleep(1)
-                except Exception:
+                except Exception as exc:
+                    logger.warning(
+                        "stream_batch_status_error", batch_id=str(batch_id), error=str(exc)
+                    )
                     error_count += 1
                     if error_count >= max_errors:
                         yield f"data: {json.dumps({'error': 'Stream failed after repeated errors'})}\n\n"
