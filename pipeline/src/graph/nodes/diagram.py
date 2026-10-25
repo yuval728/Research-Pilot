@@ -446,15 +446,13 @@ async def diagram_node(state: PipelineState) -> dict[str, Any]:
         diagram_types = list(DiagramType)
 
         # Pre-render prompts sequentially
-        # Bolt Optimization: Pre-serialize architecture_components once before loop
-        # to avoid 3x redundant Pydantic model serialization during diagram prompt rendering.
-        arch_components = [
-            c.model_dump() for c in extraction.architecture_components
-        ]
+        # Performance Optimization: Pass Pydantic model objects directly into Jinja2
+        # template context instead of constructing intermediate dictionaries via model_dump().
+        # Jinja2 accesses model attributes (e.g., comp.name) directly on Pydantic instances.
         prompts = [
             render_prompt(
                 _PROMPT_PATH,
-                architecture_components=arch_components,
+                architecture_components=extraction.architecture_components,
                 training_procedure=extraction.training_procedure,
                 proposed_method_summary=extraction.proposed_method_summary,
                 diagram_type=dt.value,
