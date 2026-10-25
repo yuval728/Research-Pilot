@@ -166,7 +166,7 @@ async def stream_run_status(
                 except Exception as exc:
                     error_count += 1
                     if error_count >= max_errors:
-                        yield f"data: {json.dumps({'error': 'Stream failed after repeated errors', 'detail': str(exc)})}\n\n"
+                        yield f"data: {json.dumps({'error': 'Stream failed after repeated errors'})}\n\n"
                         break
                     # Exponential backoff: 1s, 2s, 4s, 8s...
                     delay = base_delay * (2 ** (error_count - 1))
