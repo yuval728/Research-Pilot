@@ -325,16 +325,17 @@ async def codegen_node(state: PipelineState) -> dict[str, Any]:
         collector = TelemetryCollector(run_id=ctx.run_id, paper_id=ctx.paper_id)
 
         # ── 1. Render prompt and generate code ───────────────────────────
+        # Performance Optimization: Pass Pydantic model objects directly into Jinja2
+        # template context instead of constructing intermediate dictionaries via model_dump().
+        # Jinja2 accesses model attributes (e.g., comp.name, ds.name) directly on Pydantic instances.
         prompt = render_prompt(
             _PROMPT_PATH,
             task=extraction.task,
             proposed_method_summary=extraction.proposed_method_summary,
-            architecture_components=[
-                c.model_dump() for c in extraction.architecture_components
-            ],
+            architecture_components=extraction.architecture_components,
             training_procedure=extraction.training_procedure,
             loss_functions=extraction.loss_functions,
-            datasets=[d.model_dump() for d in extraction.datasets],
+            datasets=extraction.datasets,
         )
         python_code = await _call_llm_codegen(
             prompt, ctx.run_id, collector, max_retries=ctx.settings.llm.max_retries

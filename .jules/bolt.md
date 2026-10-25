@@ -1,5 +1,9 @@
 # Bolt's Performance Journal
 
+## 2025-05-25 - Direct Pydantic Model Object Context in Jinja2 Template Rendering
+**Learning:** Calling `model_dump()` on lists of Pydantic models (such as `architecture_components` or `datasets`) before passing them to `render_prompt()` allocated unnecessary intermediate Python dictionaries. Since Jinja2 resolves dot-notation attributes directly on Python objects, passing Pydantic model instances directly avoids dictionary conversion overhead during prompt rendering.
+**Action:** Pass Pydantic model object lists directly into Jinja2 template contexts instead of converting them with `model_dump()`.
+
 ## 2025-05-24 - React.memo Component Wrapping for Library Grid Re-renders
 **Learning:** Rendering complex card components (`PaperCard`) in library and explore grid views re-rendered every card on parent state updates (such as multi-select toggles, batch processing queue triggers, or search input updates). Wrapping `PaperCard` with `React.memo` and passing stable callback handlers (`useCallback`) prevents re-rendering un-modified paper cards, reducing re-render overhead by ~80-90% during library grid interactions.
 **Action:** Always wrap grid/list item components in `React.memo()` and ensure parent callbacks passed as props use `useCallback` to maintain reference stability across parent re-renders.
