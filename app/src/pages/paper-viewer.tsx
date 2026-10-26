@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -431,7 +430,6 @@ export default function PaperViewerPage() {
                     <div className="prose prose-invert max-w-none markdown-body">
                       <Markdown
                         remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[rehypeRaw]}
                         components={{
                           img: ({ node, ...props }) => {
                             if (
