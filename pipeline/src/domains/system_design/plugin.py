@@ -4,6 +4,7 @@ pipeline.domains.system_design.plugin
 Domain Plugin implementation for System Design papers.
 """
 
+import functools
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -22,7 +23,10 @@ class SystemDesignPlugin(DomainPlugin):
     def get_extraction_schema(self) -> type[BaseModel]:
         return SystemDesignExtraction
 
-    def get_prompt(self, stage: str, version: int) -> str:
+    @staticmethod
+    @functools.lru_cache(maxsize=16)
+    def get_prompt(stage: str, version: int) -> str:
+        """Return raw Jinja2 template string with LRU caching to eliminate disk I/O."""
         prompt_path = Path(__file__).parent / "prompts" / f"{stage}_v{version}.j2"
         if not prompt_path.exists():
             raise FileNotFoundError(
