@@ -60,11 +60,25 @@ async def upload_paper(
             detail="Only PDF files are accepted",
         )
     filename = file.filename or "upload.pdf"
-    file_bytes = await file.read()
+    max_size = 100 * 1024 * 1024  # 100MB limit to prevent DoS via memory exhaustion
+
+    if file.size and file.size > max_size:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="File size exceeds maximum allowed limit of 100MB",
+        )
+
+    # Read at most max_size + 1 bytes to prevent reading huge files into RAM
+    file_bytes = await file.read(max_size + 1)
     if not file_bytes:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Uploaded file is empty",
+        )
+    if len(file_bytes) > max_size:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="File size exceeds maximum allowed limit of 100MB",
         )
     return await paper_service.create_from_upload(file_bytes, filename, user_id=_user)
 
