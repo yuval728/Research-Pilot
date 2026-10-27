@@ -130,6 +130,18 @@ def test_upload_paper_pdf(test_client: TestClient, pdf_bytes: bytes):
     assert response.json()["source"] == "pdf_upload"
 
 
+def test_upload_paper_pdf_exceeds_size_limit(test_client: TestClient):
+    """Test POST /api/v1/papers/upload fails when file exceeds 100MB limit."""
+    oversized_bytes = b"0" * (100 * 1024 * 1024 + 1)
+    response = test_client.post(
+        "/api/v1/papers/upload",
+        files={"file": ("large.pdf", oversized_bytes, "application/pdf")},
+    )
+
+    assert response.status_code == status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+    assert "100MB" in response.json()["detail"]
+
+
 def test_delete_paper(test_client: TestClient):
     """Test DELETE /api/v1/papers/{paper_id}"""
     paper_id = uuid.uuid4()
