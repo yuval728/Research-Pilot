@@ -160,7 +160,6 @@ export const PaperCard = memo(function PaperCard({
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/70"
                 title="View diagrams"
-                aria-label="View diagrams"
                 onClick={() => navigate(`/papers/${paper.id}?tab=diagrams`)}
               >
                 <GitBranch className="w-4 h-4" />
@@ -170,7 +169,6 @@ export const PaperCard = memo(function PaperCard({
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/70"
                 title="View code"
-                aria-label="View code"
                 onClick={() => navigate(`/papers/${paper.id}?tab=code`)}
               >
                 <Code2 className="w-4 h-4" />
@@ -180,7 +178,6 @@ export const PaperCard = memo(function PaperCard({
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/70"
                 title="View report"
-                aria-label="View report"
                 onClick={() => navigate(`/papers/${paper.id}?tab=report`)}
               >
                 <FileText className="w-4 h-4" />
