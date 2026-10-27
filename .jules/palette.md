@@ -1,0 +1,3 @@
+## 2025-05-18 - Icon-Only Action Buttons & Custom Modal Accessibility Pattern
+**Learning:** Icon-only buttons (such as zoom controls, paper card quick view actions, and close buttons) frequently omit `aria-label` attributes, relying solely on visual icons or visual tooltips/`title` attributes. Screen readers cannot reliably announce accessible names from `title` alone or icon components. Custom modal overlays without explicit `role="dialog"`, `aria-modal="true"`, and `aria-labelledby` fail screen reader context announcements.
+**Action:** Always inspect icon-only `<Button size="icon">` and custom modal containers to pair visual tooltips (`title`) with explicit `aria-label` and standard ARIA dialog attributes.

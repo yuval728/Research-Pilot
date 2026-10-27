@@ -94,12 +94,17 @@ export function BatchProgressModal({
   const isDone = batch && ['completed', 'failed', 'partial'].includes(batch.status);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="batch-modal-title"
+    >
       <div className="bg-card border border-border rounded-xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[85vh]">
         {/* Header */}
         <div className="p-5 border-b border-border flex items-center justify-between">
           <div className="space-y-1">
-            <h3 className="text-lg font-bold flex items-center gap-2">
+            <h3 id="batch-modal-title" className="text-lg font-bold flex items-center gap-2">
               Batch Pipeline Execution
               {batch && <StatusBadge status={batch.status} />}
             </h3>
@@ -113,6 +118,7 @@ export function BatchProgressModal({
             variant="ghost"
             size="icon"
             onClick={onClose}
+            aria-label="Close"
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
           >
             <X className="w-4 h-4" />
