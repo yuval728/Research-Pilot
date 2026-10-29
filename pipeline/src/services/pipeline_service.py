@@ -169,20 +169,41 @@ class PipelineService:
                         run_orm.started_at = datetime.now(UTC)
                     await session.commit()
 
+            # Performance Optimization:
+            # Track an in-memory snapshot of stage statuses, token usage, cached stages,
+            # and errors to avoid opening async DB sessions and executing redundant SELECT queries
+            # on stream ticks where LangGraph yields state containing no actual stage deltas.
+            last_snapshot: tuple[Any, ...] | None = None
+
             async for update_dict in research_pipeline.astream(initial_state):  # type: ignore[arg-type]
+                last_state = self._extract_state(update_dict)
+                if last_state is None:
+                    continue
+
+                stage_statuses = dict(last_state.get("stage_statuses", {}))
+                token_usage = dict(last_state.get("token_usage", {}))
+                cached_stages = set(last_state.get("cached_stages", set()))
+                errors = list(last_state.get("errors", []))
+
+                current_snapshot = (
+                    tuple(
+                        sorted(
+                            (k, v.value if hasattr(v, "value") else str(v))
+                            for k, v in stage_statuses.items()
+                        )
+                    ),
+                    tuple(sorted(token_usage.items())),
+                    tuple(sorted(cached_stages)),
+                    tuple(errors),
+                )
+
+                if current_snapshot == last_snapshot:
+                    continue
+
                 async with get_db_context() as session:
                     run_orm = await session.get(PipelineRunORM, run_id)
                     if not run_orm:
                         continue
-
-                    last_state = self._extract_state(update_dict)
-                    if last_state is None:
-                        continue
-
-                    stage_statuses = dict(last_state.get("stage_statuses", {}))
-                    token_usage = dict(last_state.get("token_usage", {}))
-                    cached_stages = set(last_state.get("cached_stages", set()))
-                    errors = list(last_state.get("errors", []))
 
                     has_changes = await self._persist_stage_deltas(
                         session=session,
@@ -195,6 +216,7 @@ class PipelineService:
 
                     if has_changes:
                         await session.commit()
+                    last_snapshot = current_snapshot
 
             async with get_db_context() as session:
                 run_orm = await session.get(
@@ -440,7 +462,7 @@ class PipelineService:
                             else:
                                 item_orm.status = BatchItemStatus.FAILED.value
                                 item_orm.error = (
-                                    latest_run_orm.error or "Pipeline run failed"
+                                    completed_run.error or "Pipeline run failed"
                                 )
                             item_orm.updated_at = datetime.now(UTC)
                             await session.commit()
