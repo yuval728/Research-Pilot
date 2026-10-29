@@ -12,7 +12,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from supabase import create_client
@@ -74,7 +74,6 @@ def get_auth_client():
 
 
 async def get_current_user(
-    request: Request,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
 ) -> str:
     """Validate a Supabase JWT and return the authenticated user_id.
@@ -84,8 +83,6 @@ async def get_current_user(
     token = None
     if credentials:
         token = credentials.credentials
-    elif "token" in request.query_params:
-        token = request.query_params["token"]
 
     if not token:
         raise HTTPException(
