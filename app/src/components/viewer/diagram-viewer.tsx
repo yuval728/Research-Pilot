@@ -97,6 +97,7 @@ export function DiagramViewer({ diagrams }: DiagramViewerProps) {
             size="icon"
             className="h-8 w-8 border-[#1a1a1a]"
             onClick={() => setZoom((z) => Math.min(z + 0.2, 3))}
+            aria-label="Zoom in"
           >
             <ZoomIn className="w-4 h-4" />
           </Button>
@@ -105,6 +106,7 @@ export function DiagramViewer({ diagrams }: DiagramViewerProps) {
             size="icon"
             className="h-8 w-8 border-[#1a1a1a]"
             onClick={() => setZoom((z) => Math.max(z - 0.2, 0.3))}
+            aria-label="Zoom out"
           >
             <ZoomOut className="w-4 h-4" />
           </Button>
@@ -113,6 +115,7 @@ export function DiagramViewer({ diagrams }: DiagramViewerProps) {
             size="icon"
             className="h-8 w-8 border-[#1a1a1a]"
             onClick={() => setZoom(1)}
+            aria-label="Reset zoom"
           >
             <Maximize2 className="w-4 h-4" />
           </Button>

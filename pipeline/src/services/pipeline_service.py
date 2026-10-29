@@ -440,7 +440,7 @@ class PipelineService:
                             else:
                                 item_orm.status = BatchItemStatus.FAILED.value
                                 item_orm.error = (
-                                    latest_run_orm.error or "Pipeline run failed"
+                                    completed_run.error or "Pipeline run failed"
                                 )
                             item_orm.updated_at = datetime.now(UTC)
                             await session.commit()
