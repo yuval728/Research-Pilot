@@ -1,5 +1,9 @@
 # Bolt's Performance Journal
 
+## 2025-05-25 - In-Memory Snapshot Tracking to Skip Unchanged Stream Ticks in Pipeline Execution
+**Learning:** In streaming execution loops (`research_pipeline.astream`), each stream tick previously acquired an async DB connection and executed `SELECT` queries (`session.get(PipelineRunORM)`) regardless of whether the tick contained any new stage status, token usage, or error deltas. Tracking an in-memory state snapshot tuple `(stage_statuses, token_usage, cached_stages, errors)` in `_execute_pipeline_run` and skipping DB session acquisition when `current_snapshot == last_snapshot` eliminates redundant DB connections and `SELECT` queries on unchanged stream ticks.
+**Action:** In high-frequency event streaming loops that update DB records, compute an in-memory snapshot tuple of the relevant state fields and skip DB context acquisition entirely on ticks where state has not changed.
+
 ## 2025-05-24 - React.memo Component Wrapping for Library Grid Re-renders
 **Learning:** Rendering complex card components (`PaperCard`) in library and explore grid views re-rendered every card on parent state updates (such as multi-select toggles, batch processing queue triggers, or search input updates). Wrapping `PaperCard` with `React.memo` and passing stable callback handlers (`useCallback`) prevents re-rendering un-modified paper cards, reducing re-render overhead by ~80-90% during library grid interactions.
 **Action:** Always wrap grid/list item components in `React.memo()` and ensure parent callbacks passed as props use `useCallback` to maintain reference stability across parent re-renders.
