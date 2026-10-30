@@ -13,7 +13,7 @@ export function ensureMermaidInitialized() {
   mermaid.initialize({
     startOnLoad: false,
     theme: 'base',
-    securityLevel: 'loose',
+    securityLevel: 'strict',
     fontFamily: 'Inter',
     themeVariables: {
       darkMode: false,
