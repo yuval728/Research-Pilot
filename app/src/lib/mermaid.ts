@@ -13,7 +13,10 @@ export function ensureMermaidInitialized() {
   mermaid.initialize({
     startOnLoad: false,
     theme: 'base',
-    securityLevel: 'loose',
+    // Security: Enforce 'strict' mode to prevent DOM/Stored XSS vulnerabilities.
+    // Untrusted paper diagrams rendered via dangerouslySetInnerHTML could execute
+    // malicious scripts or click-event callbacks if securityLevel is 'loose'.
+    securityLevel: 'strict',
     fontFamily: 'Inter',
     themeVariables: {
       darkMode: false,
