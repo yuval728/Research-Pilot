@@ -13,7 +13,9 @@ export function ensureMermaidInitialized() {
   mermaid.initialize({
     startOnLoad: false,
     theme: 'base',
-    securityLevel: 'loose',
+    // Security: Enforce 'strict' security level so HTML tags and script execution inside
+    // diagram DSLs are sanitized/disallowed, preventing DOM/Stored XSS when rendering SVGs.
+    securityLevel: 'strict',
     fontFamily: 'Inter',
     themeVariables: {
       darkMode: false,
