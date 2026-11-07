@@ -10,10 +10,13 @@ let isInitialized = false;
  */
 export function ensureMermaidInitialized() {
   if (isInitialized) return;
+  // Security Enhancement:
+  // Using securityLevel: 'strict' ensures Mermaid sanitizes generated SVG/HTML output
+  // and disables inline click events / malicious script execution when rendered via dangerouslySetInnerHTML.
   mermaid.initialize({
     startOnLoad: false,
     theme: 'base',
-    securityLevel: 'loose',
+    securityLevel: 'strict',
     fontFamily: 'Inter',
     themeVariables: {
       darkMode: false,
