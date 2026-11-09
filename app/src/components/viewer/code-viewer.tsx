@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { python } from '@codemirror/lang-python';
 import { vscodeDark } from '@uiw/codemirror-theme-vscode';
-import { ChevronDown, Database, Download, FileCode, Loader2 } from 'lucide-react';
+import { Check, ChevronDown, Copy, Database, Download, FileCode, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -28,22 +28,12 @@ function downloadText(content: string, filename: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
 export function CodeViewer({ paperId, pythonPath, syntheticData }: CodeViewerProps) {
   const [code, setCode] = useState('');
   const [isFetching, setIsFetching] = useState(true);
   const [showData, setShowData] = useState(false);
   const [downloading, setDownloading] = useState<'py' | 'ipynb' | null>(null);
+  const [hasCopied, setHasCopied] = useState(false);
 
   useEffect(() => {
     if (!pythonPath) {
@@ -77,6 +67,18 @@ export function CodeViewer({ paperId, pythonPath, syntheticData }: CodeViewerPro
     }
   };
 
+  const handleCopyCode = async () => {
+    if (!code || isFetching) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      setHasCopied(true);
+      toast.success('Code copied to clipboard');
+      setTimeout(() => setHasCopied(false), 2000);
+    } catch {
+      toast.error('Failed to copy code to clipboard');
+    }
+  };
+
   // const handleDownloadNotebook = async () => {
   //   setDownloading('ipynb');
   //   try {
@@ -107,9 +109,28 @@ export function CodeViewer({ paperId, pythonPath, syntheticData }: CodeViewerPro
           <Button
             variant="outline"
             size="sm"
+            className={cn(
+              'h-8 border-[#1a1a1a] text-[10px] font-bold uppercase tracking-widest transition-colors',
+              hasCopied && 'text-primary border-primary/50 bg-primary/10',
+            )}
+            onClick={handleCopyCode}
+            disabled={!pythonPath || !code || isFetching}
+            aria-label={hasCopied ? 'Copied code to clipboard' : 'Copy code to clipboard'}
+          >
+            {hasCopied ? (
+              <Check className="w-3.5 h-3.5 mr-2 text-primary" />
+            ) : (
+              <Copy className="w-3.5 h-3.5 mr-2" />
+            )}
+            {hasCopied ? 'Copied' : 'Copy'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             className="h-8 border-[#1a1a1a] text-[10px] font-bold uppercase tracking-widest"
             onClick={handleDownloadPy}
             disabled={!pythonPath || !code || downloading === 'py'}
+            aria-label="Download Python code file"
           >
             {downloading === 'py' ? (
               <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
