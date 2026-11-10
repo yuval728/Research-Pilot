@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { python } from '@codemirror/lang-python';
 import { vscodeDark } from '@uiw/codemirror-theme-vscode';
-import { ChevronDown, Database, Download, FileCode, Loader2 } from 'lucide-react';
+import { Check, ChevronDown, Copy, Database, Download, FileCode, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -28,22 +28,12 @@ function downloadText(content: string, filename: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
 export function CodeViewer({ paperId, pythonPath, syntheticData }: CodeViewerProps) {
   const [code, setCode] = useState('');
   const [isFetching, setIsFetching] = useState(true);
   const [showData, setShowData] = useState(false);
   const [downloading, setDownloading] = useState<'py' | 'ipynb' | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!pythonPath) {
@@ -77,17 +67,17 @@ export function CodeViewer({ paperId, pythonPath, syntheticData }: CodeViewerPro
     }
   };
 
-  // const handleDownloadNotebook = async () => {
-  //   setDownloading('ipynb');
-  //   try {
-  //     const blob = await papersApi.getNotebook(paperId);
-  //     downloadBlob(blob, `${paperId}_notebook.ipynb`);
-  //   } catch {
-  //     toast.error('Failed to download notebook');
-  //   } finally {
-  //     setDownloading(null);
-  //   }
-  // };
+  const handleCopyCode = async () => {
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      toast.success('Code copied to clipboard');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Failed to copy code to clipboard');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -108,8 +98,24 @@ export function CodeViewer({ paperId, pythonPath, syntheticData }: CodeViewerPro
             variant="outline"
             size="sm"
             className="h-8 border-[#1a1a1a] text-[10px] font-bold uppercase tracking-widest"
+            onClick={handleCopyCode}
+            disabled={!pythonPath || !code || isFetching}
+            aria-label={copied ? 'Code copied to clipboard' : 'Copy code to clipboard'}
+          >
+            {copied ? (
+              <Check className="w-3.5 h-3.5 mr-2 text-green-500" />
+            ) : (
+              <Copy className="w-3.5 h-3.5 mr-2" />
+            )}
+            {copied ? 'Copied' : 'Copy'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 border-[#1a1a1a] text-[10px] font-bold uppercase tracking-widest"
             onClick={handleDownloadPy}
             disabled={!pythonPath || !code || downloading === 'py'}
+            aria-label="Download Python implementation file"
           >
             {downloading === 'py' ? (
               <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
@@ -118,20 +124,6 @@ export function CodeViewer({ paperId, pythonPath, syntheticData }: CodeViewerPro
             )}
             .py
           </Button>
-          {/* <Button
-            variant="outline"
-            size="sm"
-            className="h-8 border-[#1a1a1a] text-[10px] font-bold uppercase tracking-widest"
-            onClick={handleDownloadNotebook}
-            disabled={downloading === 'ipynb'}
-          >
-            {downloading === 'ipynb' ? (
-              <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-            ) : (
-              <Download className="w-3.5 h-3.5 mr-2" />
-            )}
-            .ipynb
-          </Button> */}
         </div>
       </div>
 
