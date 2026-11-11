@@ -13,7 +13,9 @@ export function ensureMermaidInitialized() {
   mermaid.initialize({
     startOnLoad: false,
     theme: 'base',
-    securityLevel: 'loose',
+    // Security: Enforce 'strict' mode to sanitize tags in diagram text and disable click/script callbacks,
+    // preventing DOM and Stored Cross-Site Scripting (XSS) when rendering SVG output via dangerouslySetInnerHTML.
+    securityLevel: 'strict',
     fontFamily: 'Inter',
     themeVariables: {
       darkMode: false,
