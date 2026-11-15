@@ -240,7 +240,13 @@ async def get_report_markdown(
     export_service: ExportServiceDep,
     _user: CurrentUserDep,
 ) -> str:
-    return await export_service.get_report_markdown(paper_id, user_id=_user)
+    # Catch ValueError (not found or access denied) to fail securely with 404 rather than unhandled 500
+    try:
+        return await export_service.get_report_markdown(paper_id, user_id=_user)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
 
 
 @router.get(

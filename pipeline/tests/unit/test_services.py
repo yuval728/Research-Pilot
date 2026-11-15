@@ -580,11 +580,17 @@ class TestExportServiceGetOutputBundle:
     @pytest.mark.asyncio
     async def test_empty_records_returns_empty_bundle(self):
         paper_id = uuid.uuid4()
-        result_mock = MagicMock()
-        result_mock.scalars.return_value.all.return_value = []
-        result_mock.scalar_one_or_none.return_value = None
+        paper_check_res = MagicMock()
+        paper_check_res.scalar_one_or_none.return_value = paper_id
+
+        outputs_res = MagicMock()
+        outputs_res.scalars.return_value.all.return_value = []
+
+        extraction_res = MagicMock()
+        extraction_res.scalar_one_or_none.return_value = None
+
         db = AsyncMock()
-        db.execute = AsyncMock(return_value=result_mock)
+        db.execute = AsyncMock(side_effect=[paper_check_res, outputs_res, extraction_res])
 
         with patch(
             "src.services.export_service.get_settings",
@@ -604,16 +610,22 @@ class TestExportServiceGetOutputBundle:
     @pytest.mark.asyncio
     async def test_report_record_populates_bundle(self):
         paper_id = uuid.uuid4()
+        paper_check_res = MagicMock()
+        paper_check_res.scalar_one_or_none.return_value = paper_id
+
         orm = MagicMock()
         orm.paper_id = paper_id
         orm.output_type = "report"
         orm.storage_path = f"outputs/{paper_id}/report.md"
 
-        result_mock = MagicMock()
-        result_mock.scalars.return_value.all.return_value = [orm]
-        result_mock.scalar_one_or_none.return_value = None
+        outputs_res = MagicMock()
+        outputs_res.scalars.return_value.all.return_value = [orm]
+
+        extraction_res = MagicMock()
+        extraction_res.scalar_one_or_none.return_value = None
+
         db = AsyncMock()
-        db.execute = AsyncMock(return_value=result_mock)
+        db.execute = AsyncMock(side_effect=[paper_check_res, outputs_res, extraction_res])
 
         with patch(
             "src.services.export_service.get_settings",
@@ -630,16 +642,22 @@ class TestExportServiceGetOutputBundle:
     @pytest.mark.asyncio
     async def test_summary_record_populates_bundle(self):
         paper_id = uuid.uuid4()
+        paper_check_res = MagicMock()
+        paper_check_res.scalar_one_or_none.return_value = paper_id
+
         orm = MagicMock()
         orm.paper_id = paper_id
         orm.output_type = "summary_bullets"
         orm.storage_path = "inline:• contribution A\n• contribution B"
 
-        result_mock = MagicMock()
-        result_mock.scalars.return_value.all.return_value = [orm]
-        result_mock.scalar_one_or_none.return_value = None
+        outputs_res = MagicMock()
+        outputs_res.scalars.return_value.all.return_value = [orm]
+
+        extraction_res = MagicMock()
+        extraction_res.scalar_one_or_none.return_value = None
+
         db = AsyncMock()
-        db.execute = AsyncMock(return_value=result_mock)
+        db.execute = AsyncMock(side_effect=[paper_check_res, outputs_res, extraction_res])
 
         with patch(
             "src.services.export_service.get_settings",
@@ -656,8 +674,12 @@ class TestExportServiceGetOutputBundle:
     @pytest.mark.asyncio
     async def test_latest_extraction_populates_bundle(self):
         paper_id = uuid.uuid4()
+        paper_check_res = MagicMock()
+        paper_check_res.scalar_one_or_none.return_value = paper_id
+
         outputs_result = MagicMock()
         outputs_result.scalars.return_value.all.return_value = []
+
         extraction_result = MagicMock()
         extraction_result.scalar_one_or_none.return_value = {
             "task": "classification",
@@ -668,7 +690,9 @@ class TestExportServiceGetOutputBundle:
             "evaluation_metrics": [],
         }
         db = AsyncMock()
-        db.execute = AsyncMock(side_effect=[outputs_result, extraction_result])
+        db.execute = AsyncMock(
+            side_effect=[paper_check_res, outputs_result, extraction_result]
+        )
 
         with patch(
             "src.services.export_service.get_settings",
@@ -681,6 +705,25 @@ class TestExportServiceGetOutputBundle:
 
         assert bundle.extraction is not None
         assert bundle.extraction.task == "classification"
+
+    @pytest.mark.asyncio
+    async def test_unauthorized_paper_access_raises_value_error(self):
+        paper_id = uuid.uuid4()
+        paper_check_res = MagicMock()
+        paper_check_res.scalar_one_or_none.return_value = None
+
+        db = AsyncMock()
+        db.execute = AsyncMock(return_value=paper_check_res)
+
+        with patch(
+            "src.services.export_service.get_settings",
+            return_value=_fake_settings(),
+        ):
+            from src.services.export_service import ExportService
+
+            svc = ExportService(db)
+            with pytest.raises(ValueError, match="not found or access denied"):
+                await svc.get_output_bundle(paper_id, user_id=uuid.uuid4())
 
 
 # ---------------------------------------------------------------------------

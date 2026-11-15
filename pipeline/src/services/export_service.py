@@ -130,22 +130,24 @@ class ExportService:
     async def get_output_bundle(
         self, paper_id: uuid.UUID, user_id: str | uuid.UUID | None = None
     ) -> OutputBundle:
-        """Assembles all outputs into one response."""
-        stmt = (
-            select(OutputORM)
-            .join(PaperORM, OutputORM.paper_id == PaperORM.id)
-            .where(OutputORM.paper_id == paper_id)
-        )
+        """Assembles all outputs into one response, enforcing paper access permissions."""
+        # Enforce authorization: verify paper is public or owned by user before returning artifacts
+        paper_stmt = select(PaperORM.id).where(PaperORM.id == paper_id)
         if user_id:
             parsed_user_id = (
                 uuid.UUID(str(user_id)) if isinstance(user_id, str) else user_id
             )
-            stmt = stmt.where(
+            paper_stmt = paper_stmt.where(
                 or_(PaperORM.user_id == parsed_user_id, PaperORM.is_public)
             )
         else:
-            stmt = stmt.where(PaperORM.is_public)
+            paper_stmt = paper_stmt.where(PaperORM.is_public)
 
+        paper_res = await self.db.execute(paper_stmt)
+        if not paper_res.scalar_one_or_none():
+            raise ValueError(f"Paper {paper_id} not found or access denied")
+
+        stmt = select(OutputORM).where(OutputORM.paper_id == paper_id)
         res = await self.db.execute(stmt)
         orms = res.scalars().all()
 
