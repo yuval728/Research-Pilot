@@ -1,5 +1,8 @@
 # Bolt's Performance Journal
 
+## 2025-05-24 - Module-Scoped CodeMirror Extension Instance Reference Stability
+**Learning:** Instantiating language extension arrays inline (`extensions={[python()]}`) in `@uiw/react-codemirror` passes a new extension array reference on every component re-render. This forces CodeMirror to tear down, re-initialize its editor view state, and re-parse syntax tokens on unrelated state updates. Extracting extension configurations to module-scoped constants (`const PYTHON_EXTENSIONS = [python()]`) maintains reference stability and prevents view state teardown.
+**Action:** Always extract CodeMirror extension arrays to top-level module constants or memoized values (`useMemo`) to preserve reference stability across component re-renders.
 ## 2025-05-25 - Search Input Debouncing for Semantic Search API Calls
 **Learning:** Invoking search handlers on every keystroke in search inputs triggered backend API calls on every character entered. In semantic search flows, each backend request generated a 1536-dimensional vector embedding via an external LLM API (`aembedding`) and executed PostgreSQL pgvector cosine distance queries. Debouncing input changes by 300ms reduces external API calls and database vector queries by ~90% for typical search queries.
 **Action:** Always debounce input handlers in search components that trigger network requests, expensive API calls, or database queries.

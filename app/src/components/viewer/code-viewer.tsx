@@ -39,6 +39,12 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+// Performance Optimization:
+// Move extension configuration array to module scope.
+// Passing a stable array reference to CodeMirror prevents the editor view
+// from being torn down and re-parsed whenever component state changes.
+const PYTHON_EXTENSIONS = [python()];
+
 export function CodeViewer({ paperId, pythonPath, syntheticData }: CodeViewerProps) {
   const [code, setCode] = useState('');
   const [isFetching, setIsFetching] = useState(true);
@@ -145,7 +151,7 @@ export function CodeViewer({ paperId, pythonPath, syntheticData }: CodeViewerPro
             value={code}
             height="500px"
             theme={vscodeDark}
-            extensions={[python()]}
+            extensions={PYTHON_EXTENSIONS}
             editable={false}
             className="text-sm"
           />
